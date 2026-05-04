@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>Island Adventure SMX</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a1628 0%, #629ddd 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+        }
+
+        #stage {
+            position: relative;
+            width: 512px;
+            height: 512px;
+            margin: 10px auto;
+            border: 3px solid #0a2540;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,150,255,0.25);
+            border-radius: 4px;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            font-size: 34px;
+            box-sizing: border-box;
+            border: 1px solid rgba(0,0,0,0.15);
+        }
+
+        /* ===== HUD ===== */
+        #hud {
+            width: 512px;
+            background: #0a2540;
+            border: 2px solid #1a4a7c;
+            border-radius: 0 0 10px 10px;
+            padding: 8px 14px;
+            box-sizing: border-box;
+            display: none;
+            margin: 0 auto;
+        }
+        .hud-row { display: flex; gap: 12px; align-items: center; }
+        .hud-bar-wrap { flex: 1; }
+        .hud-label { font-size: 11px; color: #8ab; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif; }
+        .hud-bar-bg { background: #0d1e30; border-radius: 6px; height: 14px; overflow: hidden; border: 1px solid #1a3a5c; }
+        .hud-bar { height: 100%; border-radius: 6px; transition: width 0.3s; }
+        #bar-food { background: linear-gradient(90deg, #e84040, #f0a020, #40e060); }
+        #bar-gold { background: linear-gradient(90deg, #8a6000, #ffcc00); }
+        .hud-val { font-size: 12px; color: #eee; font-weight: 600; min-width: 28px; text-align: right; font-family: 'Segoe UI', sans-serif; }
+        .hud-extra { display: flex; gap: 14px; align-items: center; margin-top: 5px; }
+        .hud-xp  { font-size: 12px; color: #adf; font-family: 'Segoe UI', sans-serif; }
+        .hud-level { font-size: 12px; color: #fda; font-weight: 700; background: #1a3050; padding: 2px 8px; border-radius: 5px; font-family: 'Segoe UI', sans-serif; }
+        .hud-msg { font-size: 12px; color: #cde; flex: 1; text-align: right; font-style: italic; font-family: 'Segoe UI', sans-serif; }
+
+        /* ===== OVERLAYS ===== */
+        .overlay {
+            position: absolute;
+            width: 512px;
+            height: 512px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        button {
+            padding: 11px 22px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #ffcc00;
+            border: none;
+            border-radius: 8px;
+            margin: 6px 4px;
+            font-size: 0.95em;
+            box-shadow: 0 4px 0 #b8a300;
+            transition: all 0.1s;
+            color: #1a1a00;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b8a300; }
+
+        /* ===== TOP RECORDS ===== */
+        #topRecordScreen {
+            position: absolute;
+            width: 512px;
+            height: 512px;
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,10,30,0.97);
+        }
+        .top-box {
+            background: #0a2540;
+            border: 2px solid #ffcc00;
+            border-radius: 12px;
+            padding: 18px 28px;
+            min-width: 320px;
+        }
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a3050;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #acd;
+        }
+        .top-row.gold { color: #ffcc00; font-weight: 700; }
+
+        /* ===== MANUAL ===== */
+        #manualScreen {
+            position: absolute;
+            width: 512px;
+            height: 512px;
+            z-index: 25;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,10,30,0.97);
+        }
+        .manual-box {
+            background: #0a2540;
+            border: 1.5px solid #1a4a8c;
+            border-radius: 12px;
+            padding: 16px 22px;
+            max-width: 430px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .manual-box p { margin: 4px 0; font-size: 13px; color: #cde; line-height: 1.6; }
+        .manual-box .sec { color: #8af; font-weight: 700; margin-top: 8px; display: block; font-size: 13px; }
+        .manual-row { display: flex; gap: 8px; align-items: center; margin: 3px 0; font-size: 13px; color: #cde; }
+        .manual-emoji { font-size: 22px; min-width: 30px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="stage">
+    <canvas id="particleCanvas" width="512" height="512"
+        style="position:absolute;top:0;left:0;z-index:5;pointer-events:none;display:none;"></canvas>
+
+    <!-- Pantalla inici -->
+    <div id="startScreen" class="overlay" style="background:rgba(0,0,0,0.88);">
+        <div style="font-size:2.5em;font-weight:900;color:#ffcc00;text-shadow:0 0 20px #ffa000;margin-bottom:4px;">
+            ⚓ ISLAND ADVENTURE
+        </div>
+        <p style="color:#8af;font-size:13px;margin:4px 0 12px;">Marc Neila Sanchez</p>
+        <div id="startRecord" style="color:#ffcc00;font-size:13px;margin-bottom:10px;"></div>
+        <button onclick="showManual()">📖 MANUAL</button>
+        <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
+        <button onclick="startGame()" style="font-size:1.1em;padding:13px 28px;margin-top:6px;">⛵ SALPAR LES VELES!</button>
+    </div>
+
+    <!-- Manual -->
+    <div id="manualScreen">
+        <div class="manual-box">
+            <h2 style="color:#ffcc00;margin:0 0 10px;text-align:center;font-size:1.25em;">📖 Manual del Capità</h2>
+            <span class="sec">OBJECTIU</span>
+            <p>Porta el vaixell al castell des del punt de sortida.</p>
+            <span class="sec">CONTROLS</span>
+            <p>Fletxes del teclat ↑ ↓ ← → per moure el vaixell.</p>
+            <span class="sec">ELEMENTS</span>
+            <div class="manual-row"><span class="manual-emoji">🌊</span><span>Aigua — Navega lliurement, gasta 1 de menjar</span></div>
+            <div class="manual-row"><span class="manual-emoji">🏝️</span><span>Illa — Comerç: bescanvia or per menjar</span></div>
+            <div class="manual-row"><span class="manual-emoji">☠️</span><span>Pirata — Combat! Guanya or o perd-ne</span></div>
+            <div class="manual-row"><span class="manual-emoji">🏰</span><span>Castell — Victòria! Has arribat a casa</span></div>
+            <div class="manual-row"><span class="manual-emoji">🦑</span><span>Rèmol — T'atrapa i perds. Fuig!</span></div>
+            <div class="manual-row"><span class="manual-emoji">🐙</span><span>Rèmol 2 — Apareix al Nivell 2. Més perill!</span></div>
+            <span class="sec" style="color:#fda;">⚠️ NIVELL 2</span>
+            <p>Quan arribes a <b style="color:#fda;">5 XP</b>, apareix un 2n monstre en posició aleatòria!</p>
+            <span class="sec">PUNTUACIÓ</span>
+            <p>Menjar + Or + Experiència acumulada.</p>
+            <div style="text-align:center;margin-top:12px;">
+                <button onclick="hideManual()">ENTESOS, CAPITÀ!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla final -->
+    <div id="endScreen" class="overlay" style="display:none;z-index:15;">
+        <h1 id="endStatus" style="font-size:3em;margin-bottom:8px;"></h1>
+        <p id="finalScore" style="font-size:14px;"></p>
+        <p id="highScoreDisplay" style="color:#ffcc00;font-weight:bold;border-top:1px solid rgba(255,255,255,0.3);padding-top:10px;margin-top:8px;font-size:13px;"></p>
+        <button onclick="location.reload()">🔄 REINTENTAR</button>
+        <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
+    </div>
+
+    <!-- Top Records -->
+    <div id="topRecordScreen">
+        <div class="top-box">
+            <h2 style="color:#ffcc00;margin:0 0 12px;font-size:1.25em;font-family:'Segoe UI',sans-serif;text-align:center;">🏆 Top 5 Rècords</h2>
+            <div id="topList"></div>
+            <div style="text-align:center;margin-top:14px;">
+                <button onclick="hideTopRecord()">TANCAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-row">
+        <div class="hud-bar-wrap">
+            <div class="hud-label">🍖 MENJAR</div>
+            <div class="hud-bar-bg"><div class="hud-bar" id="bar-food"></div></div>
+        </div>
+        <div class="hud-val" id="val-food">25</div>
+        <div class="hud-bar-wrap">
+            <div class="hud-label">💰 OR</div>
+            <div class="hud-bar-bg"><div class="hud-bar" id="bar-gold"></div></div>
+        </div>
+        <div class="hud-val" id="val-gold">10</div>
+    </div>
+    <div class="hud-extra">
+        <span class="hud-xp" id="hud-xp">⭐ XP: 0</span>
+        <span class="hud-level" id="hud-level">Nivell 1</span>
+        <span class="hud-msg" id="hud-msg">Benvingut, Capità.</span>
+    </div>
+</div>
+
+<script>
+    var stage = document.querySelector("#stage");
+
+    var map = [
+        [0, 0, 2, 0, 0, 0, 0, 3],
+        [0, 1, 0, 0, 2, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 2, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 2, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 2, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0]
+    ];
+
+    var gameObjects = [
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 5, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [4, 0, 0, 0, 0, 0, 0, 0]
+    ];
+
+    var WATER=0, ISLAND=1, PIRATE=2, HOME=3, SHIP=4, MONSTER=5, MONSTER2=6;
+    var SIZE=64, ROWS=8, COLUMNS=8;
+    var FOOD_MAX=25, GOLD_MAX=30;
+
+    var BG_WATER_A = '#1a6aaa', BG_WATER_B = '#1a5a99';
+    var BG_ISLAND  = '#3a7a28';
+    var BG_PIRATE  = '#5a3a1a';
+    var BG_HOME    = '#4a3068';
+
+    var EMOJI = { 0:'🌊', 1:'🏝️', 2:'☠️', 3:'🏰', 4:'⛵', 5:'🦑', 6:'🐙' };
+
+    var shipRow, shipColumn, monsterRow, monsterColumn;
+    var monster2Row=-1, monster2Column=-1, monster2Active=false;
+    var food=25, gold=10, experience=0, level=1;
+    var gameMessage="Benvingut, Capità.", gameRunning=false;
+
+    for (var r=0; r<ROWS; r++) for (var c=0; c<COLUMNS; c++) {
+        if (gameObjects[r][c]===SHIP)    { shipRow=r; shipColumn=c; }
+        if (gameObjects[r][c]===MONSTER) { monsterRow=r; monsterColumn=c; }
+    }
+
+    function getRecords() {
+        try { return JSON.parse(localStorage.getItem("ia_records_v2")||"[]"); } catch(e) { return []; }
+    }
+    function saveRecord(name, score) {
+        var recs=getRecords();
+        recs.push({ name:name, score:score });
+        recs.sort(function(a,b){ return b.score-a.score; });
+        recs=recs.slice(0,5);
+        localStorage.setItem("ia_records_v2", JSON.stringify(recs));
+        return recs;
+    }
+    function buildTopList(container) {
+        var recs=getRecords();
+        var medals=["🥇","🥈","🥉","4t","5è"];
+        container.innerHTML = recs.length===0
+            ? '<p style="color:#8ab;font-family:sans-serif;font-size:13px;text-align:center;">Cap rècord encara.<br>Juga i fes història!</p>'
+            : recs.map(function(r,i){
+                return '<div class="top-row '+(i===0?"gold":"")+'">'
+                    +'<span>'+medals[i]+' '+r.name+'</span>'
+                    +'<span>'+r.score+' pts</span></div>';
+              }).join("");
+    }
+    function showTopRecord() { buildTopList(document.getElementById("topList")); document.getElementById("topRecordScreen").style.display="flex"; }
+    function hideTopRecord() { document.getElementById("topRecordScreen").style.display="none"; }
+    function showManual()    { document.getElementById("manualScreen").style.display="flex"; }
+    function hideManual()    { document.getElementById("manualScreen").style.display="none"; }
+
+    function startGame() {
+        document.querySelector("#startScreen").style.display="none";
+        document.getElementById("hud").style.display="block";
+        gameRunning=true;
+        window.addEventListener("keydown", keydownHandler, false);
+        render();
+        updateHUD();
+    }
+
+    function keydownHandler(event) {
+        if (!gameRunning) return;
+        var moved=false;
+        switch(event.keyCode) {
+            case 38: if(shipRow>0)          { gameObjects[shipRow][shipColumn]=0; shipRow--;    moved=true; } break;
+            case 40: if(shipRow<ROWS-1)     { gameObjects[shipRow][shipColumn]=0; shipRow++;    moved=true; } break;
+            case 37: if(shipColumn>0)       { gameObjects[shipRow][shipColumn]=0; shipColumn--; moved=true; } break;
+            case 39: if(shipColumn<COLUMNS-1){ gameObjects[shipRow][shipColumn]=0; shipColumn++; moved=true; } break;
+        }
+        if (moved) {
+            gameObjects[shipRow][shipColumn]=SHIP;
+            food--;
+            switch(map[shipRow][shipColumn]) {
+                case WATER:  gameMessage="Navegant per l'oceà..."; break;
+                case PIRATE: fight(); break;
+                case ISLAND: trade(); break;
+                case HOME:   endGame(); return;
+            }
+            checkLevel2();
+            moveMonster();
+            if (monster2Active) moveMonster2();
+            if (gameObjects[shipRow][shipColumn]===MONSTER || gameObjects[shipRow][shipColumn]===MONSTER2) {
+                gameMessage="¡El monstre t'ha devorat!"; endGame(); return;
+            }
+            if (food<=0 || gold<=0) {
+                gameMessage="T'has quedat sense recursos..."; endGame(); return;
+            }
+            render();
+            updateHUD();
+        }
+    }
+
+    function checkLevel2() {
+        if (!monster2Active && experience>=5) {
+            monster2Active=true; level=2;
+            spawnMonster2();
+            gameMessage="⚠️ Nivell 2! Un 2n rèmol ha aparegut!";
+        }
+    }
+    function spawnMonster2() {
+        var tries=0;
+        do {
+            monster2Row    = Math.floor(Math.random()*ROWS);
+            monster2Column = Math.floor(Math.random()*COLUMNS);
+            tries++;
+        } while(tries<100 && (
+            map[monster2Row][monster2Column]!==WATER ||
+            gameObjects[monster2Row][monster2Column]!==0 ||
+            (Math.abs(monster2Row-shipRow)+Math.abs(monster2Column-shipColumn))<3
+        ));
+        gameObjects[monster2Row][monster2Column]=MONSTER2;
+    }
+
+    function moveMonster() {
+        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];
+        for(var i=0;i<dirs.length;i++){
+            var nr=monsterRow+dirs[i][0], nc=monsterColumn+dirs[i][1];
+            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER) valid.push(dirs[i]);
+        }
+        if(valid.length>0){
+            var m=valid[Math.floor(Math.random()*valid.length)];
+            gameObjects[monsterRow][monsterColumn]=0;
+            monsterRow+=m[0]; monsterColumn+=m[1];
+            gameObjects[monsterRow][monsterColumn]=MONSTER;
+        }
+    }
+    function moveMonster2() {
+        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];
+        for(var i=0;i<dirs.length;i++){
+            var nr=monster2Row+dirs[i][0], nc=monster2Column+dirs[i][1];
+            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER&&gameObjects[nr][nc]!==MONSTER) valid.push(dirs[i]);
+        }
+        if(valid.length>0){
+            var m=valid[Math.floor(Math.random()*valid.length)];
+            gameObjects[monster2Row][monster2Column]=0;
+            monster2Row+=m[0]; monster2Column+=m[1];
+            gameObjects[monster2Row][monster2Column]=MONSTER2;
+        }
+    }
+
+    function fight() {
+        var s=Math.ceil((food+gold)/2), p=Math.ceil(Math.random()*s*2);
+        if(p>s){ var lost=Math.round(p/2); gold-=lost; experience++;  gameMessage="Lluita perduda! Perds "+lost+" d'or."; }
+        else   { var won=Math.round(p/2);  gold+=won;  experience+=2; gameMessage="Victòria! Guanyes "+won+" d'or."; }
+    }
+    function trade() {
+        var islandFood=experience+gold, cost=Math.ceil(Math.random()*islandFood);
+        if(gold>cost){ food+=islandFood; gold-=cost; experience+=2; gameMessage="Comerç: +"+islandFood+" menjar."; }
+        else { experience++; gameMessage="No tens prou or per comerciar."; }
+    }
+
+    function updateHUD() {
+        var fp=Math.max(0,Math.min(100,(food/FOOD_MAX)*100));
+        var gp=Math.max(0,Math.min(100,(gold/Math.max(GOLD_MAX,gold))*100));
+        document.getElementById("bar-food").style.width=fp+"%";
+        document.getElementById("bar-gold").style.width=gp+"%";
+        document.getElementById("val-food").textContent=food;
+        document.getElementById("val-gold").textContent=gold;
+        document.getElementById("hud-xp").textContent="⭐ XP: "+experience;
+        document.getElementById("hud-level").textContent="Nivell "+level;
+        document.getElementById("hud-msg").textContent=gameMessage;
+    }
+
+    function startParticles(color) {
+        var canvas=document.getElementById("particleCanvas");
+        canvas.style.display="block";
+        var ctx=canvas.getContext("2d");
+        var particles=[];
+        for(var i=0;i<70;i++) particles.push({
+            x:Math.random()*512, y:512+Math.random()*80,
+            vx:(Math.random()-0.5)*3, vy:-(Math.random()*5+2),
+            size:Math.random()*7+3, alpha:1
+        });
+        function animate(){
+            ctx.clearRect(0,0,512,512);
+            var alive=false;
+            for(var i=0;i<particles.length;i++){
+                var p=particles[i];
+                p.x+=p.vx; p.y+=p.vy; p.alpha-=0.012;
+                if(p.alpha>0) alive=true;
+                ctx.globalAlpha=Math.max(0,p.alpha);
+                ctx.fillStyle=color;
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+            }
+            if(alive) requestAnimationFrame(animate);
+            else { ctx.clearRect(0,0,512,512); canvas.style.display="none"; }
+        }
+        animate();
+    }
+
+    function endGame() {
+        gameRunning=false;
+        window.removeEventListener("keydown", keydownHandler, false);
+        var score=food+gold+experience;
+        var isWin=(map[shipRow][shipColumn]===HOME);
+        var endScreen=document.querySelector("#endScreen");
+        var endStatus=document.querySelector("#endStatus");
+        if(isWin){
+            endStatus.innerHTML="🎉 VICTÒRIA!";
+            endStatus.style.color="#00ff88";
+            endScreen.style.background="rgba(0,50,0,0.95)";
+            startParticles("#00ff88");
+            var name=prompt("¡NOU RÈCORD POSSIBLE! Com et diuen, pirata?")||"Capità Anònim";
+            var recs=saveRecord(name,score);
+            document.querySelector("#highScoreDisplay").innerHTML="🏆 "+recs[0].score+" pts — "+recs[0].name;
+        } else {
+            endStatus.innerHTML="💀 GAME OVER";
+            endStatus.style.color="#ff4444";
+            endScreen.style.background="rgba(50,0,0,0.95)";
+            startParticles("#ff4444");
+            var recs=getRecords();
+            document.querySelector("#highScoreDisplay").innerHTML=
+                recs.length>0?"Rècord: "+recs[0].score+" pts ("+recs[0].name+")":"Cap rècord encara.";
+        }
+        document.querySelector("#finalScore").innerHTML=
+            "Puntuació final: <b>"+score+"</b><br><small style='color:#aaa;'>"+gameMessage+"</small>";
+        endScreen.style.display="flex";
+    }
+
+    function render() {
+        var children=stage.querySelectorAll(".cell");
+        for(var i=0;i<children.length;i++) stage.removeChild(children[i]);
+
+        for(var row=0;row<ROWS;row++) {
+            for(var col=0;col<COLUMNS;col++) {
+                var cell=document.createElement("div");
+                cell.setAttribute("class","cell");
+                cell.style.top  = row*SIZE+"px";
+                cell.style.left = col*SIZE+"px";
+
+                // Color de fons per tipus de casella
+                var t=map[row][col];
+                if      (t===WATER)  cell.style.background=(row+col)%2===0 ? BG_WATER_A : BG_WATER_B;
+                else if (t===ISLAND) cell.style.background=BG_ISLAND;
+                else if (t===PIRATE) cell.style.background=BG_PIRATE;
+                else if (t===HOME)   cell.style.background=BG_HOME;
+
+                // Emoji: objecte dinàmic primer, si no el del mapa
+                var obj=gameObjects[row][col];
+                if      (obj===SHIP)     { cell.textContent=EMOJI[SHIP];     cell.style.filter="drop-shadow(0 0 8px #ffe060)"; }
+                else if (obj===MONSTER)  { cell.textContent=EMOJI[MONSTER];  cell.style.filter="drop-shadow(0 0 6px #ff2040)"; }
+                else if (obj===MONSTER2) { cell.textContent=EMOJI[MONSTER2]; cell.style.filter="drop-shadow(0 0 6px #cc00ff)"; }
+                else                    { cell.textContent=EMOJI[t]||""; }
+
+                stage.appendChild(cell);
+            }
+        }
+    }
+
+    // Mostrar rècord a pantalla inici
+    (function(){
+        var recs=getRecords();
+        if(recs.length>0)
+            document.getElementById("startRecord").innerHTML=
+                "🏆 Rècord: <b>"+recs[0].score+"</b> pts ("+recs[0].name+")";
+    })();
+</script>
+</body>
+</html>
