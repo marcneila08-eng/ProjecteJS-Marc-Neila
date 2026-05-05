@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Island Adventure SMX</title>
     <style>
+        /* ===== ESTILOS GENERALES ===== */
+        /* Fondo degradado azul oscuro → azul claro para simular el océano */
         body {
             background: linear-gradient(135deg, #0a1628 0%, #629ddd 100%);
             min-height: 100vh;
@@ -13,6 +15,8 @@
             margin: 0;
         }
 
+        /* ===== TABLERO DE JUEGO ===== */
+        /* El "stage" es el área donde se renderiza el mapa 10x10 */
         #stage {
             position: relative;
             width: 512px;
@@ -24,19 +28,22 @@
             border-radius: 4px;
         }
 
+        /* ===== CELDAS DEL MAPA ===== */
+        /* Cada celda del grid 10x10 tiene 51px de ancho/alto (512px / 10 = 51.2px) */
         .cell {
             display: flex;
             align-items: center;
             justify-content: center;
-            position: absolute;
-            width: 64px;
-            height: 64px;
-            font-size: 34px;
+            position: absolute;      /* Se posicionan con top/left calculados en JS */
+            width: 51px;
+            height: 51px;
+            font-size: 28px;         /* Tamaño del emoji dentro de la celda */
             box-sizing: border-box;
             border: 1px solid rgba(0,0,0,0.15);
         }
 
-        /* ===== HUD ===== */
+        /* ===== HUD (Heads-Up Display) - Panel de estadísticas ===== */
+        /* Muestra comida, oro, XP y nivel. Aparece bajo el tablero al iniciar */
         #hud {
             width: 512px;
             background: #0a2540;
@@ -44,7 +51,7 @@
             border-radius: 0 0 10px 10px;
             padding: 8px 14px;
             box-sizing: border-box;
-            display: none;
+            display: none;           /* Oculto hasta que empieza la partida */
             margin: 0 auto;
         }
         .hud-row { display: flex; gap: 12px; align-items: center; }
@@ -52,15 +59,20 @@
         .hud-label { font-size: 11px; color: #8ab; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif; }
         .hud-bar-bg { background: #0d1e30; border-radius: 6px; height: 14px; overflow: hidden; border: 1px solid #1a3a5c; }
         .hud-bar { height: 100%; border-radius: 6px; transition: width 0.3s; }
+
+        /* Barra de comida: roja cuando baja, verde cuando alta */
         #bar-food { background: linear-gradient(90deg, #e84040, #f0a020, #40e060); }
+        /* Barra de oro: de marrón oscuro a amarillo brillante */
         #bar-gold { background: linear-gradient(90deg, #8a6000, #ffcc00); }
+
         .hud-val { font-size: 12px; color: #eee; font-weight: 600; min-width: 28px; text-align: right; font-family: 'Segoe UI', sans-serif; }
         .hud-extra { display: flex; gap: 14px; align-items: center; margin-top: 5px; }
         .hud-xp  { font-size: 12px; color: #adf; font-family: 'Segoe UI', sans-serif; }
         .hud-level { font-size: 12px; color: #fda; font-weight: 700; background: #1a3050; padding: 2px 8px; border-radius: 5px; font-family: 'Segoe UI', sans-serif; }
         .hud-msg { font-size: 12px; color: #cde; flex: 1; text-align: right; font-style: italic; font-family: 'Segoe UI', sans-serif; }
 
-        /* ===== OVERLAYS ===== */
+        /* ===== PANTALLAS SUPERPUESTAS (Overlays) ===== */
+        /* Clase base para las pantallas que se ponen encima del tablero */
         .overlay {
             position: absolute;
             width: 512px;
@@ -75,6 +87,7 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
+        /* ===== ESTILOS DE BOTONES ===== */
         button {
             padding: 11px 22px;
             cursor: pointer;
@@ -84,18 +97,19 @@
             border-radius: 8px;
             margin: 6px 4px;
             font-size: 0.95em;
-            box-shadow: 0 4px 0 #b8a300;
+            box-shadow: 0 4px 0 #b8a300;    /* Sombra inferior para efecto 3D */
             transition: all 0.1s;
             color: #1a1a00;
         }
+        /* Efecto de pulsación: baja 2px y reduce la sombra */
         button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b8a300; }
 
-        /* ===== TOP RECORDS ===== */
+        /* ===== PANTALLA DE TOP RÉCORDS ===== */
         #topRecordScreen {
             position: absolute;
             width: 512px;
             height: 512px;
-            z-index: 30;
+            z-index: 30;             /* Z-index alto para estar encima de todo */
             display: none;
             flex-direction: column;
             align-items: center;
@@ -118,9 +132,10 @@
             font-size: 13px;
             color: #acd;
         }
+        /* Clase extra para el primer lugar (oro) */
         .top-row.gold { color: #ffcc00; font-weight: 700; }
 
-        /* ===== MANUAL ===== */
+        /* ===== PANTALLA DEL MANUAL / INSTRUCCIONES ===== */
         #manualScreen {
             position: absolute;
             width: 512px;
@@ -148,23 +163,30 @@
 </head>
 <body>
 
+<!-- =====================================================
+     ESTRUCTURA HTML - PANTALLAS DEL JUEGO
+     ===================================================== -->
+
 <div id="stage">
+
+    <!-- Canvas para las partículas de victoria/derrota (confeti o sangre) -->
     <canvas id="particleCanvas" width="512" height="512"
         style="position:absolute;top:0;left:0;z-index:5;pointer-events:none;display:none;"></canvas>
 
-    <!-- Pantalla inici -->
+    <!-- ===== PANTALLA DE INICIO ===== -->
     <div id="startScreen" class="overlay" style="background:rgba(0,0,0,0.88);">
         <div style="font-size:2.5em;font-weight:900;color:#ffcc00;text-shadow:0 0 20px #ffa000;margin-bottom:4px;">
             ⚓ ISLAND ADVENTURE
         </div>
         <p style="color:#8af;font-size:13px;margin:4px 0 12px;">Marc Neila Sanchez</p>
+        <!-- Aquí se muestra el récord actual guardado en localStorage -->
         <div id="startRecord" style="color:#ffcc00;font-size:13px;margin-bottom:10px;"></div>
         <button onclick="showManual()">📖 MANUAL</button>
         <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
         <button onclick="startGame()" style="font-size:1.1em;padding:13px 28px;margin-top:6px;">⛵ SALPAR LES VELES!</button>
     </div>
 
-    <!-- Manual -->
+    <!-- ===== PANTALLA DEL MANUAL ===== -->
     <div id="manualScreen">
         <div class="manual-box">
             <h2 style="color:#ffcc00;margin:0 0 10px;text-align:center;font-size:1.25em;">📖 Manual del Capità</h2>
@@ -189,7 +211,8 @@
         </div>
     </div>
 
-    <!-- Pantalla final -->
+    <!-- ===== PANTALLA DE FIN DE PARTIDA ===== -->
+    <!-- Muestra "VICTÒRIA" o "GAME OVER" con la puntuación final -->
     <div id="endScreen" class="overlay" style="display:none;z-index:15;">
         <h1 id="endStatus" style="font-size:3em;margin-bottom:8px;"></h1>
         <p id="finalScore" style="font-size:14px;"></p>
@@ -198,10 +221,12 @@
         <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
     </div>
 
-    <!-- Top Records -->
+    <!-- ===== PANTALLA DE TOP 5 RÉCORDS ===== -->
+    <!-- z-index: 30 → la más alta, se superpone a todo -->
     <div id="topRecordScreen">
         <div class="top-box">
             <h2 style="color:#ffcc00;margin:0 0 12px;font-size:1.25em;font-family:'Segoe UI',sans-serif;text-align:center;">🏆 Top 5 Rècords</h2>
+            <!-- #topList se rellena dinámicamente con JS -->
             <div id="topList"></div>
             <div style="text-align:center;margin-top:14px;">
                 <button onclick="hideTopRecord()">TANCAR</button>
@@ -210,14 +235,17 @@
     </div>
 </div>
 
-<!-- HUD -->
+<!-- ===== HUD: Panel de estadísticas del jugador ===== -->
+<!-- Está FUERA del #stage para que aparezca debajo del tablero -->
 <div id="hud">
     <div class="hud-row">
+        <!-- Barra de comida: se reduce con cada movimiento -->
         <div class="hud-bar-wrap">
             <div class="hud-label">🍖 MENJAR</div>
             <div class="hud-bar-bg"><div class="hud-bar" id="bar-food"></div></div>
         </div>
         <div class="hud-val" id="val-food">25</div>
+        <!-- Barra de oro: se gana/pierde en combates y comercio -->
         <div class="hud-bar-wrap">
             <div class="hud-label">💰 OR</div>
             <div class="hud-bar-bg"><div class="hud-bar" id="bar-gold"></div></div>
@@ -231,63 +259,102 @@
     </div>
 </div>
 
+<!-- =====================================================
+     JAVASCRIPT - LÓGICA DEL JUEGO
+     ===================================================== -->
 <script>
+    // REFERENCIA AL TABLERO DE JUEGO
     var stage = document.querySelector("#stage");
 
     var map = [
-        [0, 0, 2, 0, 0, 0, 0, 3],
-        [0, 1, 0, 0, 2, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 2, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 2, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 2, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0]
+        [0, 0, 2, 0, 0, 0, 0, 0, 0, 3],   // Fila 0: Pirata en col.2, Castillo en col.9
+        [0, 1, 0, 0, 2, 0, 0, 1, 0, 0],   // Fila 1: Islas y Piratas
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 2, 0, 1, 0, 0, 0, 0, 2, 0],
+        [0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 0, 1, 0],
+        [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Fila 9: Solo agua
     ];
 
     var gameObjects = [
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 5, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [4, 0, 0, 0, 0, 0, 0, 0]
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 5, 0, 0, 0, 0, 0, 0, 0],   // Monstruo 1 en posición [2][2]
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [4, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Barco del jugador en posición [9][0]
     ];
 
+    // CONSTANTES - Tipos de terreno y objetos
     var WATER=0, ISLAND=1, PIRATE=2, HOME=3, SHIP=4, MONSTER=5, MONSTER2=6;
-    var SIZE=64, ROWS=8, COLUMNS=8;
+
+    // Tamaño de cada celda en píxeles (512px / 10 celdas = 51.2px)
+    var SIZE=51.2, ROWS=10, COLUMNS=10;
+
+    // Máximos para las barras de comida y oro en el HUD
     var FOOD_MAX=25, GOLD_MAX=30;
 
-    var BG_WATER_A = '#1a6aaa', BG_WATER_B = '#1a5a99';
-    var BG_ISLAND  = '#3a7a28';
-    var BG_PIRATE  = '#5a3a1a';
-    var BG_HOME    = '#4a3068';
+    // -------------------------------------------------------
+    // COLORES DE FONDO según el tipo de terreno
+    // -------------------------------------------------------
+    var BG_WATER_A = '#1a6aaa';   // Agua azul (celdas pares)
+    var BG_WATER_B = '#1a5a99';   // Agua azul oscuro (celdas impares) → efecto tablero
+    var BG_ISLAND  = '#3a7a28';   // Verde para las islas
+    var BG_PIRATE  = '#5a3a1a';   // Marrón oscuro para celdas de piratas
+    var BG_HOME    = '#4a3068';   // Púrpura para el castillo / meta
 
+    // -------------------------------------------------------
+    // EMOJIS según el tipo de celda u objeto
+    // -------------------------------------------------------
     var EMOJI = { 0:'🌊', 1:'🏝️', 2:'☠️', 3:'🏰', 4:'⛵', 5:'🦑', 6:'🐙' };
 
-    var shipRow, shipColumn, monsterRow, monsterColumn;
-    var monster2Row=-1, monster2Column=-1, monster2Active=false;
-    var food=25, gold=10, experience=0, level=1;
-    var gameMessage="Benvingut, Capità.", gameRunning=false;
+    // VARIABLES DE ESTADO DEL JUEGO
+    var shipRow, shipColumn;                              // Posición actual del barco (fila, columna)
+    var monsterRow, monsterColumn;                        // Posición del monstruo 1
+    var monster2Row=-1, monster2Column=-1;                // Posición del monstruo 2 (inactivo al inicio)
+    var monster2Active=false;                             // ¿Ha aparecido ya el segundo monstruo?
+    var food=25, gold=10, experience=0, level=1;          // Estadísticas del jugador
+    var gameMessage="Benvingut, Capità.", gameRunning=false; // Mensaje de estado y control de juego
+
+    // INICIALIZACIÓN: Leer posiciones iniciales del mapa
+    // Recorre gameObjects para encontrar dónde están el barco y el monstruo
 
     for (var r=0; r<ROWS; r++) for (var c=0; c<COLUMNS; c++) {
-        if (gameObjects[r][c]===SHIP)    { shipRow=r; shipColumn=c; }
-        if (gameObjects[r][c]===MONSTER) { monsterRow=r; monsterColumn=c; }
+        if (gameObjects[r][c]===SHIP)    { shipRow=r; shipColumn=c; }      // Guarda posición inicial del barco
+        if (gameObjects[r][c]===MONSTER) { monsterRow=r; monsterColumn=c; } // Guarda posición inicial del monstruo
     }
+
+    // GESTIÓN DE RÉCORDS (LocalStorage)
+    // Los récords se guardan en el navegador con la clave "ia_records_v2"
 
     function getRecords() {
         try { return JSON.parse(localStorage.getItem("ia_records_v2")||"[]"); } catch(e) { return []; }
     }
+
+    /**
+     * saveRecord(name, score)
+     * Guarda una nueva puntuación en localStorage.
+     */
     function saveRecord(name, score) {
         var recs=getRecords();
         recs.push({ name:name, score:score });
-        recs.sort(function(a,b){ return b.score-a.score; });
-        recs=recs.slice(0,5);
+        recs.sort(function(a,b){ return b.score-a.score; });  // Orden descendente
+        recs=recs.slice(0,5);                                  // Solo Top 5
         localStorage.setItem("ia_records_v2", JSON.stringify(recs));
         return recs;
     }
+
+    /**
+     * buildTopList(container)
+     * Rellena un elemento HTML con la lista de top 5 récords.
+     */
     function buildTopList(container) {
         var recs=getRecords();
         var medals=["🥇","🥈","🥉","4t","5è"];
@@ -299,11 +366,29 @@
                     +'<span>'+r.score+' pts</span></div>';
               }).join("");
     }
+
+        // CONTROL DE PANTALLAS SUPERPUESTAS
+        /** Muestra la pantalla de Top 5 Récords (construye la lista antes de mostrar) */
     function showTopRecord() { buildTopList(document.getElementById("topList")); document.getElementById("topRecordScreen").style.display="flex"; }
+
+    /** Oculta la pantalla de Top 5 Récords */
     function hideTopRecord() { document.getElementById("topRecordScreen").style.display="none"; }
+
+    /** Muestra la pantalla del manual de instrucciones */
     function showManual()    { document.getElementById("manualScreen").style.display="flex"; }
+
+    /** Oculta la pantalla del manual */
     function hideManual()    { document.getElementById("manualScreen").style.display="none"; }
 
+    // INICIAR PARTIDA
+       /**
+     * startGame()
+     * - Oculta la pantalla de inicio.
+     * - Hace visible el HUD (barras de estadísticas).
+     * - Activa el flag gameRunning.
+     * - Registra el listener de teclado para mover el barco.
+     * - Dibuja el tablero inicial y actualiza el HUD.
+     */
     function startGame() {
         document.querySelector("#startScreen").style.display="none";
         document.getElementById("hud").style.display="block";
@@ -313,38 +398,63 @@
         updateHUD();
     }
 
+    // -------------------------------------------------------
+    // CONTROL DEL TECLADO - Movimiento del barco
+    // -------------------------------------------------------
     function keydownHandler(event) {
-        if (!gameRunning) return;
+        if (!gameRunning) return;  // Si el juego no está activo, ignorar la tecla
+
         var moved=false;
+
+        // Mover el barco según la tecla pulsada (códigos de tecla de flechas)
         switch(event.keyCode) {
-            case 38: if(shipRow>0)          { gameObjects[shipRow][shipColumn]=0; shipRow--;    moved=true; } break;
-            case 40: if(shipRow<ROWS-1)     { gameObjects[shipRow][shipColumn]=0; shipRow++;    moved=true; } break;
-            case 37: if(shipColumn>0)       { gameObjects[shipRow][shipColumn]=0; shipColumn--; moved=true; } break;
-            case 39: if(shipColumn<COLUMNS-1){ gameObjects[shipRow][shipColumn]=0; shipColumn++; moved=true; } break;
+            case 38: if(shipRow>0)           { gameObjects[shipRow][shipColumn]=0; shipRow--;    moved=true; } break; // ↑ Arriba
+            case 40: if(shipRow<ROWS-1)      { gameObjects[shipRow][shipColumn]=0; shipRow++;    moved=true; } break; // ↓ Abajo
+            case 37: if(shipColumn>0)        { gameObjects[shipRow][shipColumn]=0; shipColumn--; moved=true; } break; // ← Izquierda
+            case 39: if(shipColumn<COLUMNS-1){ gameObjects[shipRow][shipColumn]=0; shipColumn++; moved=true; } break; // → Derecha
         }
+
         if (moved) {
-            gameObjects[shipRow][shipColumn]=SHIP;
-            food--;
+            gameObjects[shipRow][shipColumn]=SHIP;  // Marcar la nueva posición del barco
+            food--;                                  // Cada movimiento cuesta 1 de comida
+
+            // COMPROBACIÓN 1: ¿El barco aterrizó encima de un monstruo? → Derrota inmediata
+            if ((monsterRow===shipRow && monsterColumn===shipColumn) ||
+                (monster2Active && monster2Row===shipRow && monster2Column===shipColumn)) {
+                gameMessage="El monstre t'ha devorat!"; endGame(); return;
+            }
+
+            // Ejecutar la acción según el tipo de terreno donde está ahora el barco
             switch(map[shipRow][shipColumn]) {
-                case WATER:  gameMessage="Navegant per l'oceà..."; break;
-                case PIRATE: fight(); break;
-                case ISLAND: trade(); break;
-                case HOME:   endGame(); return;
+                case WATER:  gameMessage="Navegant per l'oceà..."; break;  // Sin efecto especial
+                case PIRATE: fight(); break;                                // Combate con el pirata
+                case ISLAND: trade(); break;                                // Comerciar en la isla
+                case HOME:   endGame(); return;                             // ¡Victoria! Llegó al castillo
             }
-            checkLevel2();
-            moveMonster();
-            if (monster2Active) moveMonster2();
-            if (gameObjects[shipRow][shipColumn]===MONSTER || gameObjects[shipRow][shipColumn]===MONSTER2) {
-                gameMessage="¡El monstre t'ha devorat!"; endGame(); return;
+
+            checkLevel2();               // ¿Se desbloquea el nivel 2?
+            moveMonster();               // Mover el monstruo 1
+            if (monster2Active) moveMonster2();  // Mover el monstruo 2 (si existe)
+
+            // COMPROBACIÓN 2: ¿Un monstruo se movió encima del barco? → Derrota
+            if ((monsterRow===shipRow && monsterColumn===shipColumn) ||
+                (monster2Active && monster2Row===shipRow && monster2Column===shipColumn)) {
+                gameMessage="El monstre t'ha devorat!"; endGame(); return;
             }
+
+            // COMPROBACIÓN 3: ¿Se quedó sin comida o sin oro? → Derrota
             if (food<=0 || gold<=0) {
                 gameMessage="T'has quedat sense recursos..."; endGame(); return;
             }
-            render();
-            updateHUD();
+
+            render();      // Redibujar el tablero con las nuevas posiciones
+            updateHUD();   // Actualizar las barras y estadísticas
         }
     }
 
+    // -------------------------------------------------------
+    // SISTEMA DE NIVEL 2
+    // -------------------------------------------------------
     function checkLevel2() {
         if (!monster2Active && experience>=5) {
             monster2Active=true; level=2;
@@ -352,6 +462,11 @@
             gameMessage="⚠️ Nivell 2! Un 2n rèmol ha aparegut!";
         }
     }
+
+    /**
+     * spawnMonster2()
+     * Coloca al segundo monstruo en una celda aleatoria que cumpla:
+     */
     function spawnMonster2() {
         var tries=0;
         do {
@@ -359,30 +474,35 @@
             monster2Column = Math.floor(Math.random()*COLUMNS);
             tries++;
         } while(tries<100 && (
-            map[monster2Row][monster2Column]!==WATER ||
-            gameObjects[monster2Row][monster2Column]!==0 ||
-            (Math.abs(monster2Row-shipRow)+Math.abs(monster2Column-shipColumn))<3
+            map[monster2Row][monster2Column]!==WATER ||            // Debe ser agua
+            gameObjects[monster2Row][monster2Column]!==0 ||       // Debe estar vacío
+            (Math.abs(monster2Row-shipRow)+Math.abs(monster2Column-shipColumn))<3  // Distancia mínima
         ));
-        gameObjects[monster2Row][monster2Column]=MONSTER2;
+        gameObjects[monster2Row][monster2Column]=MONSTER2;  // Colocar el segundo monstruo
     }
-
+    // MOVIMIENTO DE MONSTRUOS (se mueven al azar por el agua)
+    //moveMonster()
+    
     function moveMonster() {
-        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];
+        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];  // Las 4 direcciones posibles (arriba, abajo, izq, der)
         for(var i=0;i<dirs.length;i++){
             var nr=monsterRow+dirs[i][0], nc=monsterColumn+dirs[i][1];
+            // Añadir la dirección solo si está dentro del tablero y es agua
             if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER) valid.push(dirs[i]);
         }
         if(valid.length>0){
-            var m=valid[Math.floor(Math.random()*valid.length)];
-            gameObjects[monsterRow][monsterColumn]=0;
-            monsterRow+=m[0]; monsterColumn+=m[1];
-            gameObjects[monsterRow][monsterColumn]=MONSTER;
+            var m=valid[Math.floor(Math.random()*valid.length)];  // Elegir dirección aleatoria
+            gameObjects[monsterRow][monsterColumn]=0;              // Limpiar posición anterior
+            monsterRow+=m[0]; monsterColumn+=m[1];                // Actualizar posición
+            gameObjects[monsterRow][monsterColumn]=MONSTER;        // Marcar nueva posición
         }
     }
+
     function moveMonster2() {
         var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];
         for(var i=0;i<dirs.length;i++){
             var nr=monster2Row+dirs[i][0], nc=monster2Column+dirs[i][1];
+            // Válido solo si: dentro del tablero + agua + no ocupado por monstruo 1
             if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER&&gameObjects[nr][nc]!==MONSTER) valid.push(dirs[i]);
         }
         if(valid.length>0){
@@ -393,20 +513,34 @@
         }
     }
 
+    // -------------------------------------------------------
+    // MECÁNICAS DE JUEGO
+    // -------------------------------------------------------
     function fight() {
         var s=Math.ceil((food+gold)/2), p=Math.ceil(Math.random()*s*2);
         if(p>s){ var lost=Math.round(p/2); gold-=lost; experience++;  gameMessage="Lluita perduda! Perds "+lost+" d'or."; }
         else   { var won=Math.round(p/2);  gold+=won;  experience+=2; gameMessage="Victòria! Guanyes "+won+" d'or."; }
     }
+
+    /**
+     * trade()
+     * Se activa cuando el barco entra en una celda de Isla (🏝️).
+     * Cálculo del comercio:
+     */
     function trade() {
         var islandFood=experience+gold, cost=Math.ceil(Math.random()*islandFood);
         if(gold>cost){ food+=islandFood; gold-=cost; experience+=2; gameMessage="Comerç: +"+islandFood+" menjar."; }
         else { experience++; gameMessage="No tens prou or per comerciar."; }
     }
 
+    // -------------------------------------------------------
+    // ACTUALIZAR EL HUD (Panel de estadísticas)
+    // -------------------------------------------------------
     function updateHUD() {
+        // Calcular porcentaje de llenado de las barras (entre 0% y 100%)
         var fp=Math.max(0,Math.min(100,(food/FOOD_MAX)*100));
         var gp=Math.max(0,Math.min(100,(gold/Math.max(GOLD_MAX,gold))*100));
+
         document.getElementById("bar-food").style.width=fp+"%";
         document.getElementById("bar-gold").style.width=gp+"%";
         document.getElementById("val-food").textContent=food;
@@ -416,93 +550,125 @@
         document.getElementById("hud-msg").textContent=gameMessage;
     }
 
+    // -------------------------------------------------------
+    // SISTEMA DE PARTÍCULAS (Efecto visual al ganar/perder)
+    // -------------------------------------------------------
     function startParticles(color) {
         var canvas=document.getElementById("particleCanvas");
         canvas.style.display="block";
         var ctx=canvas.getContext("2d");
         var particles=[];
+
+        // Crear 70 partículas con propiedades aleatorias
         for(var i=0;i<70;i++) particles.push({
-            x:Math.random()*512, y:512+Math.random()*80,
-            vx:(Math.random()-0.5)*3, vy:-(Math.random()*5+2),
-            size:Math.random()*7+3, alpha:1
+            x:Math.random()*512,           // Posición X aleatoria
+            y:512+Math.random()*80,        // Empiezan debajo del canvas
+            vx:(Math.random()-0.5)*3,      // Velocidad horizontal aleatoria (izq o der)
+            vy:-(Math.random()*5+2),       // Velocidad vertical hacia arriba (negativa = subir)
+            size:Math.random()*7+3,        // Tamaño entre 3 y 10 px
+            alpha:1                        // Opacidad inicial al 100%
         });
+
         function animate(){
-            ctx.clearRect(0,0,512,512);
-            var alive=false;
+            ctx.clearRect(0,0,512,512);    // Limpiar el canvas en cada frame
+            var alive=false;               // ¿Queda alguna partícula visible?
             for(var i=0;i<particles.length;i++){
                 var p=particles[i];
-                p.x+=p.vx; p.y+=p.vy; p.alpha-=0.012;
-                if(p.alpha>0) alive=true;
+                p.x+=p.vx;                 // Mover horizontalmente
+                p.y+=p.vy;                 // Mover verticalmente (hacia arriba)
+                p.alpha-=0.012;            // Reducir opacidad gradualmente
+                if(p.alpha>0) alive=true;  // Si aún visible, el sistema sigue activo
                 ctx.globalAlpha=Math.max(0,p.alpha);
                 ctx.fillStyle=color;
                 ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
             }
+            // Continuar animación o limpiar canvas si todas las partículas han muerto
             if(alive) requestAnimationFrame(animate);
             else { ctx.clearRect(0,0,512,512); canvas.style.display="none"; }
         }
         animate();
     }
 
+    // -------------------------------------------------------
+    // FIN DE PARTIDA
+    // -------------------------------------------------------
+
+    /**
+     * endGame()
+     * Gestiona el final de la partida (victoria o derrota).
+     */
     function endGame() {
         gameRunning=false;
-        window.removeEventListener("keydown", keydownHandler, false);
-        var score=food+gold+experience;
-        var isWin=(map[shipRow][shipColumn]===HOME);
+        window.removeEventListener("keydown", keydownHandler, false);  // Desactivar controles
+
+        var score=food+gold+experience;                                 // Puntuación = todos los recursos acumulados
+        var isWin=(map[shipRow][shipColumn]===HOME);                    // ¿El barco está en el castillo?
         var endScreen=document.querySelector("#endScreen");
         var endStatus=document.querySelector("#endStatus");
+
         if(isWin){
+            // --- VICTORIA ---
             endStatus.innerHTML="🎉 VICTÒRIA!";
             endStatus.style.color="#00ff88";
             endScreen.style.background="rgba(0,50,0,0.95)";
-            startParticles("#00ff88");
-            var name=prompt("¡NOU RÈCORD POSSIBLE! Com et diuen, pirata?")||"Capità Anònim";
-            var recs=saveRecord(name,score);
+            startParticles("#00ff88");                                  // Partículas verdes
+            var name=prompt("¡NOU RÈCORD POSSIBLE! Com et diuen, pirata?")||"Capità Anònim";  // Pedir nombre
+            var recs=saveRecord(name,score);                            // Guardar en localStorage
             document.querySelector("#highScoreDisplay").innerHTML="🏆 "+recs[0].score+" pts — "+recs[0].name;
         } else {
+            // --- DERROTA ---
             endStatus.innerHTML="💀 GAME OVER";
             endStatus.style.color="#ff4444";
             endScreen.style.background="rgba(50,0,0,0.95)";
-            startParticles("#ff4444");
+            startParticles("#ff4444");                                  // Partículas rojas
             var recs=getRecords();
             document.querySelector("#highScoreDisplay").innerHTML=
                 recs.length>0?"Rècord: "+recs[0].score+" pts ("+recs[0].name+")":"Cap rècord encara.";
         }
+
+        // Mostrar puntuación y mensaje del último evento
         document.querySelector("#finalScore").innerHTML=
             "Puntuació final: <b>"+score+"</b><br><small style='color:#aaa;'>"+gameMessage+"</small>";
         endScreen.style.display="flex";
     }
 
+    // RENDERIZADO DEL TABLERO
     function render() {
+        // Eliminar todas las celdas del render anterior
         var children=stage.querySelectorAll(".cell");
         for(var i=0;i<children.length;i++) stage.removeChild(children[i]);
 
+        // Crear una celda por cada posición del tablero 10x10
         for(var row=0;row<ROWS;row++) {
             for(var col=0;col<COLUMNS;col++) {
                 var cell=document.createElement("div");
                 cell.setAttribute("class","cell");
+
+                // Posicionar la celda con píxeles exactos
                 cell.style.top  = row*SIZE+"px";
                 cell.style.left = col*SIZE+"px";
 
-                // Color de fons per tipus de casella
+                // --- COLOR DE FONDO según el tipo de terreno ---
                 var t=map[row][col];
-                if      (t===WATER)  cell.style.background=(row+col)%2===0 ? BG_WATER_A : BG_WATER_B;
+                if      (t===WATER)  cell.style.background=(row+col)%2===0 ? BG_WATER_A : BG_WATER_B;  // Efecto tablero de ajedrez en el agua
                 else if (t===ISLAND) cell.style.background=BG_ISLAND;
                 else if (t===PIRATE) cell.style.background=BG_PIRATE;
                 else if (t===HOME)   cell.style.background=BG_HOME;
 
-                // Emoji: objecte dinàmic primer, si no el del mapa
+                // --- EMOJI según el objeto en esta celda ---
                 var obj=gameObjects[row][col];
-                if      (obj===SHIP)     { cell.textContent=EMOJI[SHIP];     cell.style.filter="drop-shadow(0 0 8px #ffe060)"; }
-                else if (obj===MONSTER)  { cell.textContent=EMOJI[MONSTER];  cell.style.filter="drop-shadow(0 0 6px #ff2040)"; }
-                else if (obj===MONSTER2) { cell.textContent=EMOJI[MONSTER2]; cell.style.filter="drop-shadow(0 0 6px #cc00ff)"; }
-                else                    { cell.textContent=EMOJI[t]||""; }
+                if      (obj===SHIP)     { cell.textContent=EMOJI[SHIP];     cell.style.filter="drop-shadow(0 0 8px #ffe060)"; }  // Barco con halo dorado
+                else if (obj===MONSTER)  { cell.textContent=EMOJI[MONSTER];  cell.style.filter="drop-shadow(0 0 6px #ff2040)"; }  // Monstruo 1 con halo rojo
+                else if (obj===MONSTER2) { cell.textContent=EMOJI[MONSTER2]; cell.style.filter="drop-shadow(0 0 6px #cc00ff)"; }  // Monstruo 2 con halo morado
+                else                    { cell.textContent=EMOJI[t]||""; }  // Terreno estático (emoji del mapa)
 
                 stage.appendChild(cell);
             }
         }
     }
 
-    // Mostrar rècord a pantalla inici
+    // AUTO-EJECUCIÓN AL CARGAR LA PÁGINA
+    // Muestra el récord actual en la pantalla de inicio (si existe)
     (function(){
         var recs=getRecords();
         if(recs.length>0)

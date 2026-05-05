@@ -1,9 +1,9 @@
 # forestOfLyrica
 
-Per la seva banda els alumnes heu de fer un clone i un pull :
+Heu de fer un clone i un pull :
 
 ```
-# git clone https://github.com/joan-mh/pirateIsland
+# git clone https://github.com/marcneila08-eng/ProjecteJS-Marc-Neila.git
 ```
 
 Si voleu agafar el canvi, primer heu de renombrar el vostre fitxer i després fer el pull
