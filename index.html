@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <title>Island Adventure SMX</title>
     <style>
-        /* ===== ESTILOS GENERALES ===== */
-        /* Fondo degradado azul oscuro → azul claro para simular el océano */
+        /* Fons de la pàgina: gradient blau per simular l'oceà */
         body {
             background: linear-gradient(135deg, #0a1628 0%, #629ddd 100%);
             min-height: 100vh;
@@ -15,9 +14,8 @@
             margin: 0;
         }
 
-        /* ===== TABLERO DE JUEGO ===== */
-        /* El "stage" es el área donde se renderiza el mapa 10x10 */
-        #stage {
+        /* El tauler de joc: 512x512 píxels, posició relativa perquè les cel·les s'hi col·loquin a sobre */
+        #tauler {
             position: relative;
             width: 512px;
             height: 512px;
@@ -28,22 +26,20 @@
             border-radius: 4px;
         }
 
-        /* ===== CELDAS DEL MAPA ===== */
-        /* Cada celda del grid 10x10 tiene 51px de ancho/alto (512px / 10 = 51.2px) */
-        .cell {
+        /* Cada cel·la del tauler 10x10 */
+        .cella {
             display: flex;
             align-items: center;
             justify-content: center;
-            position: absolute;      /* Se posicionan con top/left calculados en JS */
+            position: absolute;
             width: 51px;
             height: 51px;
-            font-size: 28px;         /* Tamaño del emoji dentro de la celda */
+            font-size: 28px;
             box-sizing: border-box;
             border: 1px solid rgba(0,0,0,0.15);
         }
 
-        /* ===== HUD (Heads-Up Display) - Panel de estadísticas ===== */
-        /* Muestra comida, oro, XP y nivel. Aparece bajo el tablero al iniciar */
+        /* HUD: panell d'estadístiques que apareix a sota del tauler */
         #hud {
             width: 512px;
             background: #0a2540;
@@ -51,29 +47,28 @@
             border-radius: 0 0 10px 10px;
             padding: 8px 14px;
             box-sizing: border-box;
-            display: none;           /* Oculto hasta que empieza la partida */
+            display: none; /* Amagat fins que comença la partida */
             margin: 0 auto;
         }
-        .hud-row { display: flex; gap: 12px; align-items: center; }
-        .hud-bar-wrap { flex: 1; }
-        .hud-label { font-size: 11px; color: #8ab; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif; }
-        .hud-bar-bg { background: #0d1e30; border-radius: 6px; height: 14px; overflow: hidden; border: 1px solid #1a3a5c; }
-        .hud-bar { height: 100%; border-radius: 6px; transition: width 0.3s; }
+        .hud-fila { display: flex; gap: 12px; align-items: center; }
+        .hud-barra-cont { flex: 1; }
+        .hud-etiqueta { font-size: 11px; color: #8ab; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif; }
+        .hud-barra-fons { background: #0d1e30; border-radius: 6px; height: 14px; overflow: hidden; border: 1px solid #1a3a5c; }
+        .hud-barra { height: 100%; border-radius: 6px; transition: width 0.3s; }
 
-        /* Barra de comida: roja cuando baja, verde cuando alta */
-        #bar-food { background: linear-gradient(90deg, #e84040, #f0a020, #40e060); }
-        /* Barra de oro: de marrón oscuro a amarillo brillante */
-        #bar-gold { background: linear-gradient(90deg, #8a6000, #ffcc00); }
+        /* Barra de menjar: vermell → groc → verd */
+        #barra-menjar { background: linear-gradient(90deg, #e84040, #f0a020, #40e060); }
+        /* Barra d'or: marró fosc → groc brillant */
+        #barra-or { background: linear-gradient(90deg, #8a6000, #ffcc00); }
 
-        .hud-val { font-size: 12px; color: #eee; font-weight: 600; min-width: 28px; text-align: right; font-family: 'Segoe UI', sans-serif; }
+        .hud-valor { font-size: 12px; color: #eee; font-weight: 600; min-width: 28px; text-align: right; font-family: 'Segoe UI', sans-serif; }
         .hud-extra { display: flex; gap: 14px; align-items: center; margin-top: 5px; }
-        .hud-xp  { font-size: 12px; color: #adf; font-family: 'Segoe UI', sans-serif; }
-        .hud-level { font-size: 12px; color: #fda; font-weight: 700; background: #1a3050; padding: 2px 8px; border-radius: 5px; font-family: 'Segoe UI', sans-serif; }
-        .hud-msg { font-size: 12px; color: #cde; flex: 1; text-align: right; font-style: italic; font-family: 'Segoe UI', sans-serif; }
+        .hud-xp    { font-size: 12px; color: #adf; font-family: 'Segoe UI', sans-serif; }
+        .hud-nivell { font-size: 12px; color: #fda; font-weight: 700; background: #1a3050; padding: 2px 8px; border-radius: 5px; font-family: 'Segoe UI', sans-serif; }
+        .hud-missatge { font-size: 12px; color: #cde; flex: 1; text-align: right; font-style: italic; font-family: 'Segoe UI', sans-serif; }
 
-        /* ===== PANTALLAS SUPERPUESTAS (Overlays) ===== */
-        /* Clase base para las pantallas que se ponen encima del tablero */
-        .overlay {
+        /* Pantalles superposades (per sobre del tauler) */
+        .superposicio {
             position: absolute;
             width: 512px;
             height: 512px;
@@ -87,7 +82,7 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* ===== ESTILOS DE BOTONES ===== */
+        /* Estil dels botons */
         button {
             padding: 11px 22px;
             cursor: pointer;
@@ -97,33 +92,33 @@
             border-radius: 8px;
             margin: 6px 4px;
             font-size: 0.95em;
-            box-shadow: 0 4px 0 #b8a300;    /* Sombra inferior para efecto 3D */
+            box-shadow: 0 4px 0 #b8a300;
             transition: all 0.1s;
             color: #1a1a00;
         }
-        /* Efecto de pulsación: baja 2px y reduce la sombra */
+        /* Efecte de prémer el botó */
         button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b8a300; }
 
-        /* ===== PANTALLA DE TOP RÉCORDS ===== */
-        #topRecordScreen {
+        /* Pantalla de Top 5 Rècords */
+        #pantallaRecords {
             position: absolute;
             width: 512px;
             height: 512px;
-            z-index: 30;             /* Z-index alto para estar encima de todo */
+            z-index: 30;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background: rgba(0,10,30,0.97);
         }
-        .top-box {
+        .caixa-records {
             background: #0a2540;
             border: 2px solid #ffcc00;
             border-radius: 12px;
             padding: 18px 28px;
             min-width: 320px;
         }
-        .top-row {
+        .fila-record {
             display: flex;
             justify-content: space-between;
             padding: 6px 0;
@@ -132,11 +127,10 @@
             font-size: 13px;
             color: #acd;
         }
-        /* Clase extra para el primer lugar (oro) */
-        .top-row.gold { color: #ffcc00; font-weight: 700; }
+        .fila-record.or { color: #ffcc00; font-weight: 700; }
 
-        /* ===== PANTALLA DEL MANUAL / INSTRUCCIONES ===== */
-        #manualScreen {
+        /* Pantalla del Manual d'instruccions */
+        #pantallaManual {
             position: absolute;
             width: 512px;
             height: 512px;
@@ -147,7 +141,7 @@
             justify-content: center;
             background: rgba(0,10,30,0.97);
         }
-        .manual-box {
+        .caixa-manual {
             background: #0a2540;
             border: 1.5px solid #1a4a8c;
             border-radius: 12px;
@@ -155,526 +149,842 @@
             max-width: 430px;
             font-family: 'Segoe UI', sans-serif;
         }
-        .manual-box p { margin: 4px 0; font-size: 13px; color: #cde; line-height: 1.6; }
-        .manual-box .sec { color: #8af; font-weight: 700; margin-top: 8px; display: block; font-size: 13px; }
-        .manual-row { display: flex; gap: 8px; align-items: center; margin: 3px 0; font-size: 13px; color: #cde; }
-        .manual-emoji { font-size: 22px; min-width: 30px; text-align: center; }
+        .caixa-manual p { margin: 4px 0; font-size: 13px; color: #cde; line-height: 1.6; }
+        .caixa-manual .seccio { color: #8af; font-weight: 700; margin-top: 8px; display: block; font-size: 13px; }
+        .fila-manual { display: flex; gap: 8px; align-items: center; margin: 3px 0; font-size: 13px; color: #cde; }
+        .emoji-manual { font-size: 22px; min-width: 30px; text-align: center; }
     </style>
 </head>
 <body>
 
 <!-- =====================================================
-     ESTRUCTURA HTML - PANTALLAS DEL JUEGO
+     HTML: PANTALLES DEL JOC
      ===================================================== -->
 
-<div id="stage">
+<div id="tauler">
 
-    <!-- Canvas para las partículas de victoria/derrota (confeti o sangre) -->
-    <canvas id="particleCanvas" width="512" height="512"
+    <!-- Canvas per a les partícules de victòria/derrota -->
+    <canvas id="canvasParticules" width="512" height="512"
         style="position:absolute;top:0;left:0;z-index:5;pointer-events:none;display:none;"></canvas>
 
-    <!-- ===== PANTALLA DE INICIO ===== -->
-    <div id="startScreen" class="overlay" style="background:rgba(0,0,0,0.88);">
+    <!-- PANTALLA D'INICI -->
+    <div id="pantallaInici" class="superposicio" style="background:rgba(0,0,0,0.88);">
         <div style="font-size:2.5em;font-weight:900;color:#ffcc00;text-shadow:0 0 20px #ffa000;margin-bottom:4px;">
             ⚓ ISLAND ADVENTURE
         </div>
         <p style="color:#8af;font-size:13px;margin:4px 0 12px;">Marc Neila Sanchez</p>
-        <!-- Aquí se muestra el récord actual guardado en localStorage -->
-        <div id="startRecord" style="color:#ffcc00;font-size:13px;margin-bottom:10px;"></div>
-        <button onclick="showManual()">📖 MANUAL</button>
-        <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
-        <button onclick="startGame()" style="font-size:1.1em;padding:13px 28px;margin-top:6px;">⛵ SALPAR LES VELES!</button>
+        <div id="recordInicial" style="color:#ffcc00;font-size:13px;margin-bottom:10px;"></div>
+        <button onclick="mostrarManual()">📖 MANUAL</button>
+        <button onclick="mostrarRecords()">🏆 TOP RÈCORDS</button>
+        <button onclick="iniciarJoc()" style="font-size:1.1em;padding:13px 28px;margin-top:6px;">⛵ SALPAR LES VELES!</button>
     </div>
 
-    <!-- ===== PANTALLA DEL MANUAL ===== -->
-    <div id="manualScreen">
-        <div class="manual-box">
+    <!-- PANTALLA DEL MANUAL -->
+    <div id="pantallaManual">
+        <div class="caixa-manual">
             <h2 style="color:#ffcc00;margin:0 0 10px;text-align:center;font-size:1.25em;">📖 Manual del Capità</h2>
-            <span class="sec">OBJECTIU</span>
+            <span class="seccio">OBJECTIU</span>
             <p>Porta el vaixell al castell des del punt de sortida.</p>
-            <span class="sec">CONTROLS</span>
+            <span class="seccio">CONTROLS</span>
             <p>Fletxes del teclat ↑ ↓ ← → per moure el vaixell.</p>
-            <span class="sec">ELEMENTS</span>
-            <div class="manual-row"><span class="manual-emoji">🌊</span><span>Aigua — Navega lliurement, gasta 1 de menjar</span></div>
-            <div class="manual-row"><span class="manual-emoji">🏝️</span><span>Illa — Comerç: bescanvia or per menjar</span></div>
-            <div class="manual-row"><span class="manual-emoji">☠️</span><span>Pirata — Combat! Guanya or o perd-ne</span></div>
-            <div class="manual-row"><span class="manual-emoji">🏰</span><span>Castell — Victòria! Has arribat a casa</span></div>
-            <div class="manual-row"><span class="manual-emoji">🦑</span><span>Rèmol — T'atrapa i perds. Fuig!</span></div>
-            <div class="manual-row"><span class="manual-emoji">🐙</span><span>Rèmol 2 — Apareix al Nivell 2. Més perill!</span></div>
-            <span class="sec" style="color:#fda;">⚠️ NIVELL 2</span>
+            <span class="seccio">ELEMENTS</span>
+            <div class="fila-manual"><span class="emoji-manual">🌊</span><span>Aigua — Navega lliurement, gasta 1 de menjar</span></div>
+            <div class="fila-manual"><span class="emoji-manual">🏝️</span><span>Illa — Comerç: bescanvia or per menjar</span></div>
+            <div class="fila-manual"><span class="emoji-manual">☠️</span><span>Pirata — Combat! Guanya or o perd-ne</span></div>
+            <div class="fila-manual"><span class="emoji-manual">🏰</span><span>Castell — Victòria! Has arribat a casa</span></div>
+            <div class="fila-manual"><span class="emoji-manual">🦑</span><span>Rèmol — T'atrapa i perds. Fuig!</span></div>
+            <div class="fila-manual"><span class="emoji-manual">🐙</span><span>Rèmol 2 — Apareix al Nivell 2. Més perill!</span></div>
+            <span class="seccio" style="color:#fda;">⚠️ NIVELL 2</span>
             <p>Quan arribes a <b style="color:#fda;">5 XP</b>, apareix un 2n monstre en posició aleatòria!</p>
-            <span class="sec">PUNTUACIÓ</span>
+            <span class="seccio">PUNTUACIÓ</span>
             <p>Menjar + Or + Experiència acumulada.</p>
             <div style="text-align:center;margin-top:12px;">
-                <button onclick="hideManual()">ENTESOS, CAPITÀ!</button>
+                <button onclick="amagar('pantallaManual')">ENTESOS, CAPITÀ!</button>
             </div>
         </div>
     </div>
 
-    <!-- ===== PANTALLA DE FIN DE PARTIDA ===== -->
-    <!-- Muestra "VICTÒRIA" o "GAME OVER" con la puntuación final -->
-    <div id="endScreen" class="overlay" style="display:none;z-index:15;">
-        <h1 id="endStatus" style="font-size:3em;margin-bottom:8px;"></h1>
-        <p id="finalScore" style="font-size:14px;"></p>
-        <p id="highScoreDisplay" style="color:#ffcc00;font-weight:bold;border-top:1px solid rgba(255,255,255,0.3);padding-top:10px;margin-top:8px;font-size:13px;"></p>
+    <!-- PANTALLA DE FINAL DE PARTIDA -->
+    <div id="pantallaFinal" class="superposicio" style="display:none;z-index:15;">
+        <h1 id="estatFinal" style="font-size:3em;margin-bottom:8px;"></h1>
+        <p id="puntuacioFinal" style="font-size:14px;"></p>
+        <p id="mostrarRecord" style="color:#ffcc00;font-weight:bold;border-top:1px solid rgba(255,255,255,0.3);padding-top:10px;margin-top:8px;font-size:13px;"></p>
         <button onclick="location.reload()">🔄 REINTENTAR</button>
-        <button onclick="showTopRecord()">🏆 TOP RÈCORDS</button>
+        <button onclick="mostrarRecords()">🏆 TOP RÈCORDS</button>
     </div>
 
-    <!-- ===== PANTALLA DE TOP 5 RÉCORDS ===== -->
-    <!-- z-index: 30 → la más alta, se superpone a todo -->
-    <div id="topRecordScreen">
-        <div class="top-box">
+    <!-- PANTALLA DE TOP 5 RÈCORDS -->
+    <div id="pantallaRecords">
+        <div class="caixa-records">
             <h2 style="color:#ffcc00;margin:0 0 12px;font-size:1.25em;font-family:'Segoe UI',sans-serif;text-align:center;">🏆 Top 5 Rècords</h2>
-            <!-- #topList se rellena dinámicamente con JS -->
-            <div id="topList"></div>
+            <div id="llistaRecords"></div>
             <div style="text-align:center;margin-top:14px;">
-                <button onclick="hideTopRecord()">TANCAR</button>
+                <button onclick="amagar('pantallaRecords')">TANCAR</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== HUD: Panel de estadísticas del jugador ===== -->
-<!-- Está FUERA del #stage para que aparezca debajo del tablero -->
+<!-- HUD: fora del tauler, apareix a sota -->
 <div id="hud">
-    <div class="hud-row">
-        <!-- Barra de comida: se reduce con cada movimiento -->
-        <div class="hud-bar-wrap">
-            <div class="hud-label">🍖 MENJAR</div>
-            <div class="hud-bar-bg"><div class="hud-bar" id="bar-food"></div></div>
+    <div class="hud-fila">
+        <div class="hud-barra-cont">
+            <div class="hud-etiqueta">🍖 MENJAR</div>
+            <div class="hud-barra-fons"><div class="hud-barra" id="barra-menjar"></div></div>
         </div>
-        <div class="hud-val" id="val-food">25</div>
-        <!-- Barra de oro: se gana/pierde en combates y comercio -->
-        <div class="hud-bar-wrap">
-            <div class="hud-label">💰 OR</div>
-            <div class="hud-bar-bg"><div class="hud-bar" id="bar-gold"></div></div>
+        <div class="hud-valor" id="valor-menjar">25</div>
+        <div class="hud-barra-cont">
+            <div class="hud-etiqueta">💰 OR</div>
+            <div class="hud-barra-fons"><div class="hud-barra" id="barra-or"></div></div>
         </div>
-        <div class="hud-val" id="val-gold">10</div>
+        <div class="hud-valor" id="valor-or">10</div>
     </div>
     <div class="hud-extra">
-        <span class="hud-xp" id="hud-xp">⭐ XP: 0</span>
-        <span class="hud-level" id="hud-level">Nivell 1</span>
-        <span class="hud-msg" id="hud-msg">Benvingut, Capità.</span>
+        <span class="hud-xp"    id="hud-xp">⭐ XP: 0</span>
+        <span class="hud-nivell" id="hud-nivell">Nivell 1</span>
+        <span class="hud-missatge" id="hud-missatge">Benvingut, Capità.</span>
     </div>
 </div>
 
 <!-- =====================================================
-     JAVASCRIPT - LÓGICA DEL JUEGO
+     JAVASCRIPT: LÒGICA DEL JOC
      ===================================================== -->
 <script>
-    // REFERENCIA AL TABLERO DE JUEGO
-    var stage = document.querySelector("#stage");
 
-    var map = [
-        [0, 0, 2, 0, 0, 0, 0, 0, 0, 3],   // Fila 0: Pirata en col.2, Castillo en col.9
-        [0, 1, 0, 0, 2, 0, 0, 1, 0, 0],   // Fila 1: Islas y Piratas
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 2, 0, 1, 0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 1, 0],
-        [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Fila 9: Solo agua
-    ];
+// -------------------------------------------------------
+// REFERÈNCIA AL TAULER I CONSTANTS
+// -------------------------------------------------------
 
-    var gameObjects = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 5, 0, 0, 0, 0, 0, 0, 0],   // Monstruo 1 en posición [2][2]
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [4, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Barco del jugador en posición [9][0]
-    ];
+// L'element HTML on es dibuixen totes les cel·les
+var tauler = document.getElementById("tauler");
 
-    // CONSTANTES - Tipos de terreno y objetos
-    var WATER=0, ISLAND=1, PIRATE=2, HOME=3, SHIP=4, MONSTER=5, MONSTER2=6;
+// Valors numèrics per als tipus de terreny i objectes
+// S'utilitzen als arrays "mapa" i "objectesMapa"
+var AIGUA   = 0;
+var ILLA    = 1;
+var PIRATA  = 2;
+var CASTELL = 3;
+var VAIXELL = 4;
+var MONSTRE = 5;
+var MONSTRE2 = 6;
 
-    // Tamaño de cada celda en píxeles (512px / 10 celdas = 51.2px)
-    var SIZE=51.2, ROWS=10, COLUMNS=10;
+// Mida de cada cel·la en píxels (512px / 10 cel·les = 51.2px)
+var MIDA_CEL = 51.2;
+var FILES    = 10;
+var COLUMNES = 10;
 
-    // Máximos para las barras de comida y oro en el HUD
-    var FOOD_MAX=25, GOLD_MAX=30;
+// Màxims per a les barres del HUD
+var MAX_MENJAR = 25;
+var MAX_OR     = 30;
 
-    // -------------------------------------------------------
-    // COLORES DE FONDO según el tipo de terreno
-    // -------------------------------------------------------
-    var BG_WATER_A = '#1a6aaa';   // Agua azul (celdas pares)
-    var BG_WATER_B = '#1a5a99';   // Agua azul oscuro (celdas impares) → efecto tablero
-    var BG_ISLAND  = '#3a7a28';   // Verde para las islas
-    var BG_PIRATE  = '#5a3a1a';   // Marrón oscuro para celdas de piratas
-    var BG_HOME    = '#4a3068';   // Púrpura para el castillo / meta
+// Colors de fons per a cada tipus de terreny
+var COLOR_AIGUA_A = '#1a6aaa';  // Blau (cel·les parells) → efecte escaquer
+var COLOR_AIGUA_B = '#1a5a99';  // Blau fosc (cel·les imparells)
+var COLOR_ILLA    = '#3a7a28';  // Verd per a les illes
+var COLOR_PIRATA  = '#5a3a1a';  // Marró per als pirates
+var COLOR_CASTELL = '#4a3068';  // Porpra per al castell
 
-    // -------------------------------------------------------
-    // EMOJIS según el tipo de celda u objeto
-    // -------------------------------------------------------
-    var EMOJI = { 0:'🌊', 1:'🏝️', 2:'☠️', 3:'🏰', 4:'⛵', 5:'🦑', 6:'🐙' };
+// Emojis que es mostren a cada cel·la segons el seu valor
+var EMOJIS = {
+    0: '🌊',   // Aigua
+    1: '🏝️',  // Illa
+    2: '☠️',   // Pirata
+    3: '🏰',   // Castell (meta)
+    4: '⛵',   // Vaixell (jugador)
+    5: '🦑',   // Monstre 1
+    6: '🐙'    // Monstre 2
+};
 
-    // VARIABLES DE ESTADO DEL JUEGO
-    var shipRow, shipColumn;                              // Posición actual del barco (fila, columna)
-    var monsterRow, monsterColumn;                        // Posición del monstruo 1
-    var monster2Row=-1, monster2Column=-1;                // Posición del monstruo 2 (inactivo al inicio)
-    var monster2Active=false;                             // ¿Ha aparecido ya el segundo monstruo?
-    var food=25, gold=10, experience=0, level=1;          // Estadísticas del jugador
-    var gameMessage="Benvingut, Capità.", gameRunning=false; // Mensaje de estado y control de juego
+// -------------------------------------------------------
+// EL MAPA DEL JOC (10x10)
+// Cada nombre indica el tipus de terreny:
+//   0=Aigua | 1=Illa | 2=Pirata | 3=Castell
+// -------------------------------------------------------
+var mapa = [
+    [0, 0, 2, 0, 0, 0, 0, 0, 0, 3],   // Fila 0: Pirata a col.2, Castell a col.9
+    [0, 1, 0, 0, 2, 0, 0, 1, 0, 0],   // Fila 1: Illes i Pirates
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 2, 0, 1, 0, 0, 0, 0, 2, 0],
+    [0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+    [0, 1, 0, 0, 1, 0, 0, 0, 1, 0],
+    [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Fila 9: Només aigua
+];
 
-    // INICIALIZACIÓN: Leer posiciones iniciales del mapa
-    // Recorre gameObjects para encontrar dónde están el barco y el monstruo
+// OBJECTES DEL MAPA (10x10)
+// Separats del mapa perquè es mouen cada torn
+//   4=Vaixell | 5=Monstre1 | 6=Monstre2
+// La resta és 0 (buit)
+var objectesMapa = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 5, 0, 0, 0, 0, 0, 0, 0],   // Monstre 1 comença a [2][2]
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0, 0, 0, 0, 0]    // Vaixell comença a [9][0]
+];
 
-    for (var r=0; r<ROWS; r++) for (var c=0; c<COLUMNS; c++) {
-        if (gameObjects[r][c]===SHIP)    { shipRow=r; shipColumn=c; }      // Guarda posición inicial del barco
-        if (gameObjects[r][c]===MONSTER) { monsterRow=r; monsterColumn=c; } // Guarda posición inicial del monstruo
-    }
+// -------------------------------------------------------
+// VARIABLES D'ESTAT DEL JOC
+// -------------------------------------------------------
 
-    // GESTIÓN DE RÉCORDS (LocalStorage)
-    // Los récords se guardan en el navegador con la clave "ia_records_v2"
+// Posició actual del vaixell (fila i columna)
+var filVaixell = 0;
+var colVaixell = 0;
 
-    function getRecords() {
-        try { return JSON.parse(localStorage.getItem("ia_records_v2")||"[]"); } catch(e) { return []; }
-    }
+// Posició del monstre 1
+var filMonstre1 = 0;
+var colMonstre1 = 0;
 
-    /**
-     * saveRecord(name, score)
-     * Guarda una nueva puntuación en localStorage.
-     */
-    function saveRecord(name, score) {
-        var recs=getRecords();
-        recs.push({ name:name, score:score });
-        recs.sort(function(a,b){ return b.score-a.score; });  // Orden descendente
-        recs=recs.slice(0,5);                                  // Solo Top 5
-        localStorage.setItem("ia_records_v2", JSON.stringify(recs));
-        return recs;
-    }
+// Posició del monstre 2 (val -1 si encara no ha aparegut)
+var filMonstre2 = -1;
+var colMonstre2 = -1;
+var monstre2Actiu = false;  // Indica si el 2n monstre ja ha aparegut
 
-    /**
-     * buildTopList(container)
-     * Rellena un elemento HTML con la lista de top 5 récords.
-     */
-    function buildTopList(container) {
-        var recs=getRecords();
-        var medals=["🥇","🥈","🥉","4t","5è"];
-        container.innerHTML = recs.length===0
-            ? '<p style="color:#8ab;font-family:sans-serif;font-size:13px;text-align:center;">Cap rècord encara.<br>Juga i fes història!</p>'
-            : recs.map(function(r,i){
-                return '<div class="top-row '+(i===0?"gold":"")+'">'
-                    +'<span>'+medals[i]+' '+r.name+'</span>'
-                    +'<span>'+r.score+' pts</span></div>';
-              }).join("");
-    }
+// Estadístiques del jugador
+var menjar     = 25;
+var or         = 10;
+var experiencia = 0;
+var nivell     = 1;
 
-        // CONTROL DE PANTALLAS SUPERPUESTAS
-        /** Muestra la pantalla de Top 5 Récords (construye la lista antes de mostrar) */
-    function showTopRecord() { buildTopList(document.getElementById("topList")); document.getElementById("topRecordScreen").style.display="flex"; }
+// Missatge que es mostra al HUD cada torn
+var missatgeJoc = "Benvingut, Capità.";
 
-    /** Oculta la pantalla de Top 5 Récords */
-    function hideTopRecord() { document.getElementById("topRecordScreen").style.display="none"; }
+// Indica si el joc està en marxa (per bloquejar tecles quan no toca)
+var jocEnMarxa = false;
 
-    /** Muestra la pantalla del manual de instrucciones */
-    function showManual()    { document.getElementById("manualScreen").style.display="flex"; }
+// -------------------------------------------------------
+// TROBAR POSICIONS INICIALS AL MAPA
+// Recorrem "objectesMapa" per saber on estan el vaixell i el monstre
+// -------------------------------------------------------
+var r = 0;
+var c = 0;
 
-    /** Oculta la pantalla del manual */
-    function hideManual()    { document.getElementById("manualScreen").style.display="none"; }
+for (r = 0; r < FILES; r++) {
+    for (c = 0; c < COLUMNES; c++) {
 
-    // INICIAR PARTIDA
-       /**
-     * startGame()
-     * - Oculta la pantalla de inicio.
-     * - Hace visible el HUD (barras de estadísticas).
-     * - Activa el flag gameRunning.
-     * - Registra el listener de teclado para mover el barco.
-     * - Dibuja el tablero inicial y actualiza el HUD.
-     */
-    function startGame() {
-        document.querySelector("#startScreen").style.display="none";
-        document.getElementById("hud").style.display="block";
-        gameRunning=true;
-        window.addEventListener("keydown", keydownHandler, false);
-        render();
-        updateHUD();
-    }
-
-    // -------------------------------------------------------
-    // CONTROL DEL TECLADO - Movimiento del barco
-    // -------------------------------------------------------
-    function keydownHandler(event) {
-        if (!gameRunning) return;  // Si el juego no está activo, ignorar la tecla
-
-        var moved=false;
-
-        // Mover el barco según la tecla pulsada (códigos de tecla de flechas)
-        switch(event.keyCode) {
-            case 38: if(shipRow>0)           { gameObjects[shipRow][shipColumn]=0; shipRow--;    moved=true; } break; // ↑ Arriba
-            case 40: if(shipRow<ROWS-1)      { gameObjects[shipRow][shipColumn]=0; shipRow++;    moved=true; } break; // ↓ Abajo
-            case 37: if(shipColumn>0)        { gameObjects[shipRow][shipColumn]=0; shipColumn--; moved=true; } break; // ← Izquierda
-            case 39: if(shipColumn<COLUMNS-1){ gameObjects[shipRow][shipColumn]=0; shipColumn++; moved=true; } break; // → Derecha
+        if (objectesMapa[r][c] === VAIXELL) {
+            filVaixell = r;
+            colVaixell = c;
         }
 
-        if (moved) {
-            gameObjects[shipRow][shipColumn]=SHIP;  // Marcar la nueva posición del barco
-            food--;                                  // Cada movimiento cuesta 1 de comida
+        if (objectesMapa[r][c] === MONSTRE) {
+            filMonstre1 = r;
+            colMonstre1 = c;
+        }
+    }
+}
 
-            // COMPROBACIÓN 1: ¿El barco aterrizó encima de un monstruo? → Derrota inmediata
-            if ((monsterRow===shipRow && monsterColumn===shipColumn) ||
-                (monster2Active && monster2Row===shipRow && monster2Column===shipColumn)) {
-                gameMessage="El monstre t'ha devorat!"; endGame(); return;
+// -------------------------------------------------------
+// GESTIÓ DE RÈCORDS (localStorage)
+// Es guarden al navegador de l'usuari
+// -------------------------------------------------------
+
+// Llegeix els rècords guardats. Si no n'hi ha, retorna un array buit
+function obtenirRecords() {
+    var dadesGuardades = localStorage.getItem("ia_records_v2");
+
+    if (dadesGuardades === null) {
+        return [];
+    }
+
+    try {
+        return JSON.parse(dadesGuardades);
+    } catch (e) {
+        return [];
+    }
+}
+
+// Guarda un nou rècord i retorna la llista actualitzada (Top 5)
+function guardarRecord(nom, puntuacio) {
+    var records = obtenirRecords();
+
+    // Afegim el nou rècord
+    var nouRecord = { nom: nom, puntuacio: puntuacio };
+    records.push(nouRecord);
+
+    // Ordenem de major a menor puntuació (b-a = descendent)
+    records.sort(function(a, b) {
+        return b.puntuacio - a.puntuacio;
+    });
+
+    // Guardem només els 5 millors
+    if (records.length > 5) {
+        records = records.slice(0, 5);
+    }
+
+    localStorage.setItem("ia_records_v2", JSON.stringify(records));
+    return records;
+}
+
+// Construeix la llista HTML de rècords dins d'un element contenidor
+function construirLlistaRecords(contenidor) {
+    var records = obtenirRecords();
+    var medalles = ["🥇", "🥈", "🥉", "4t", "5è"];
+
+    if (records.length === 0) {
+        contenidor.innerHTML = '<p style="color:#8ab;font-family:sans-serif;font-size:13px;text-align:center;">Cap rècord encara.<br>Juga i fes història!</p>';
+        return;
+    }
+
+    // Construïm el HTML de cada fila
+    var html = "";
+    for (var i = 0; i < records.length; i++) {
+        var classeCss = "";
+        if (i === 0) {
+            classeCss = "or";  // Primera posició en color daurat
+        }
+        html += '<div class="fila-record ' + classeCss + '">';
+        html += '<span>' + medalles[i] + ' ' + records[i].nom + '</span>';
+        html += '<span>' + records[i].puntuacio + ' pts</span>';
+        html += '</div>';
+    }
+
+    contenidor.innerHTML = html;
+}
+
+// -------------------------------------------------------
+// CONTROL DE PANTALLES SUPERPOSADES
+// -------------------------------------------------------
+
+// Mostra la pantalla de Top 5 Rècords
+function mostrarRecords() {
+    construirLlistaRecords(document.getElementById("llistaRecords"));
+    document.getElementById("pantallaRecords").style.display = "flex";
+}
+
+// Mostra la pantalla del manual d'instruccions
+function mostrarManual() {
+    document.getElementById("pantallaManual").style.display = "flex";
+}
+
+// Amaga qualsevol pantalla superposada donant-li l'id com a text
+function amagar(idPantalla) {
+    document.getElementById(idPantalla).style.display = "none";
+}
+
+// -------------------------------------------------------
+// INICIAR EL JOC
+// -------------------------------------------------------
+
+function iniciarJoc() {
+    // Amaguem la pantalla d'inici
+    document.getElementById("pantallaInici").style.display = "none";
+
+    // Mostrem el HUD (barres d'estadístiques)
+    document.getElementById("hud").style.display = "block";
+
+    // Activem el joc i el listener de tecles
+    jocEnMarxa = true;
+    window.addEventListener("keydown", gestionarTecla, false);
+
+    // Dibuixem el tauler i actualitzem el HUD per primera vegada
+    dibuixarTauler();
+    actualitzarHUD();
+}
+
+// -------------------------------------------------------
+// CONTROL DEL TECLAT
+// S'executa cada vegada que l'usuari prem una tecla
+// -------------------------------------------------------
+
+function gestionarTecla(event) {
+    // Si el joc no està en marxa, ignorem la tecla
+    if (!jocEnMarxa) {
+        return;
+    }
+
+    var hamogut = false;
+    var novafila = filVaixell;
+    var novaColumna = colVaixell;
+
+    // Calculem la nova posició segons la tecla premuda
+    if (event.keyCode === 38 && filVaixell > 0) {
+        // Fletxa AMUNT: disminuïm la fila
+        novafila = filVaixell - 1;
+        hamogut = true;
+    }
+
+    if (event.keyCode === 40 && filVaixell < FILES - 1) {
+        // Fletxa AVALL: augmentem la fila
+        novafila = filVaixell + 1;
+        hamogut = true;
+    }
+
+    if (event.keyCode === 37 && colVaixell > 0) {
+        // Fletxa ESQUERRA: disminuïm la columna
+        novaColumna = colVaixell - 1;
+        hamogut = true;
+    }
+
+    if (event.keyCode === 39 && colVaixell < COLUMNES - 1) {
+        // Fletxa DRETA: augmentem la columna
+        novaColumna = colVaixell + 1;
+        hamogut = true;
+    }
+
+    // Si el vaixell s'ha mogut, processem el torn
+    if (hamogut) {
+        // Netejem la posició anterior del vaixell a l'array
+        objectesMapa[filVaixell][colVaixell] = 0;
+
+        // Actualitzem la posició del vaixell
+        filVaixell = novafila;
+        colVaixell = novaColumna;
+
+        // Col·loquem el vaixell a la nova posició
+        objectesMapa[filVaixell][colVaixell] = VAIXELL;
+
+        // Cada moviment costa 1 de menjar
+        menjar = menjar - 1;
+
+        // COMPROVACIÓ 1: El vaixell ha caigut sobre un monstre? → Derrota
+        var sobreMonstre1 = (filMonstre1 === filVaixell && colMonstre1 === colVaixell);
+        var sobreMonstre2 = (monstre2Actiu && filMonstre2 === filVaixell && colMonstre2 === colVaixell);
+
+        if (sobreMonstre1 || sobreMonstre2) {
+            missatgeJoc = "El monstre t'ha devorat!";
+            acabarJoc();
+            return;
+        }
+
+        // Executem l'acció del terreny on ha aterrat el vaixell
+        var terreny = mapa[filVaixell][colVaixell];
+
+        if (terreny === AIGUA) {
+            missatgeJoc = "Navegant per l'oceà...";
+        }
+
+        if (terreny === PIRATA) {
+            combat();
+        }
+
+        if (terreny === ILLA) {
+            comerc();
+        }
+
+        if (terreny === CASTELL) {
+            acabarJoc();
+            return;
+        }
+
+        // Comprovem si cal activar el Nivell 2
+        comprovarNivell2();
+
+        // Movem els monstres
+        mouMonstre1();
+
+        if (monstre2Actiu) {
+            mouMonstre2();
+        }
+
+        // COMPROVACIÓ 2: Un monstre s'ha mogut sobre el vaixell? → Derrota
+        var capturat1 = (filMonstre1 === filVaixell && colMonstre1 === colVaixell);
+        var capturat2 = (monstre2Actiu && filMonstre2 === filVaixell && colMonstre2 === colVaixell);
+
+        if (capturat1 || capturat2) {
+            missatgeJoc = "El monstre t'ha devorat!";
+            acabarJoc();
+            return;
+        }
+
+        // COMPROVACIÓ 3: Sense menjar o sense or? → Derrota
+        if (menjar <= 0 || or <= 0) {
+            missatgeJoc = "T'has quedat sense recursos...";
+            acabarJoc();
+            return;
+        }
+
+        // Redibuixem el tauler i actualitzem el HUD
+        dibuixarTauler();
+        actualitzarHUD();
+    }
+}
+
+// -------------------------------------------------------
+// SISTEMA DE NIVELL 2
+// -------------------------------------------------------
+
+// Comprova si cal pujar al Nivell 2 (quan s'arriba a 5 XP)
+function comprovarNivell2() {
+    if (!monstre2Actiu && experiencia >= 5) {
+        monstre2Actiu = true;
+        nivell = 2;
+        apareixerMonstre2();
+        missatgeJoc = "⚠️ Nivell 2! Un 2n rèmol ha aparegut!";
+    }
+}
+
+// Col·loca el Monstre 2 en una posició aleatòria d'aigua, lluny del vaixell
+function apareixerMonstre2() {
+    var intents = 0;
+    var trobarPosicio = true;
+
+    while (trobarPosicio && intents < 100) {
+        // Posició aleatòria dins del tauler
+        var filaProva    = Math.floor(Math.random() * FILES);
+        var columnaProva = Math.floor(Math.random() * COLUMNES);
+
+        // Distància Manhattan entre la posició candidata i el vaixell
+        var distancia = Math.abs(filaProva - filVaixell) + Math.abs(columnaProva - colVaixell);
+
+        // La posició és vàlida si: és aigua + cel·la buida + a 3 passos del vaixell
+        var esAigua  = (mapa[filaProva][columnaProva] === AIGUA);
+        var esBuida  = (objectesMapa[filaProva][columnaProva] === 0);
+        var proupLluny = (distancia >= 3);
+
+        if (esAigua && esBuida && proupLluny) {
+            filMonstre2 = filaProva;
+            colMonstre2 = columnaProva;
+            objectesMapa[filMonstre2][colMonstre2] = MONSTRE2;
+            trobarPosicio = false;  // Hem trobat una posició vàlida, sortim del bucle
+        }
+
+        intents = intents + 1;
+    }
+}
+
+// -------------------------------------------------------
+// MOVIMENT DELS MONSTRES
+// Cada torn es mouen a una cel·la adjacent d'aigua aleatòria
+// -------------------------------------------------------
+
+// Mou el Monstre 1 en una direcció aleatòria vàlida
+function mouMonstre1() {
+    // Totes les direccions possibles: amunt, avall, esquerra, dreta
+    var direccions = [[-1,0], [1,0], [0,-1], [0,1]];
+    var movimentsValids = [];
+
+    // Comprovem quines direccions són vàlides (dins del tauler i cel·la d'aigua)
+    for (var i = 0; i < direccions.length; i++) {
+        var nf = filMonstre1  + direccions[i][0];
+        var nc = colMonstre1 + direccions[i][1];
+
+        var dinsTauler = (nf >= 0 && nf < FILES && nc >= 0 && nc < COLUMNES);
+
+        if (dinsTauler && mapa[nf][nc] === AIGUA) {
+            movimentsValids.push(direccions[i]);
+        }
+    }
+
+    // Si hi ha almenys un moviment possible, n'escollim un a l'atzar
+    if (movimentsValids.length > 0) {
+        var indexAtzar = Math.floor(Math.random() * movimentsValids.length);
+        var moviment = movimentsValids[indexAtzar];
+
+        objectesMapa[filMonstre1][colMonstre1] = 0;   // Netejem la posició antiga
+        filMonstre1 = filMonstre1 + moviment[0];
+        colMonstre1 = colMonstre1 + moviment[1];
+        objectesMapa[filMonstre1][colMonstre1] = MONSTRE;  // Marquem la nova posició
+    }
+}
+
+// Mou el Monstre 2 (igual que el 1 però no pot anar on hi ha el Monstre 1)
+function mouMonstre2() {
+    var direccions = [[-1,0], [1,0], [0,-1], [0,1]];
+    var movimentsValids = [];
+
+    for (var i = 0; i < direccions.length; i++) {
+        var nf = filMonstre2  + direccions[i][0];
+        var nc = colMonstre2 + direccions[i][1];
+
+        var dinsTauler  = (nf >= 0 && nf < FILES && nc >= 0 && nc < COLUMNES);
+        var esAigua     = (mapa[nf][nc] === AIGUA);
+        var noOcupatM1  = (objectesMapa[nf][nc] !== MONSTRE);  // No xocar amb el Monstre 1
+
+        if (dinsTauler && esAigua && noOcupatM1) {
+            movimentsValids.push(direccions[i]);
+        }
+    }
+
+    if (movimentsValids.length > 0) {
+        var indexAtzar = Math.floor(Math.random() * movimentsValids.length);
+        var moviment = movimentsValids[indexAtzar];
+
+        objectesMapa[filMonstre2][colMonstre2] = 0;
+        filMonstre2 = filMonstre2 + moviment[0];
+        colMonstre2 = colMonstre2 + moviment[1];
+        objectesMapa[filMonstre2][colMonstre2] = MONSTRE2;
+    }
+}
+
+// -------------------------------------------------------
+// MECÀNIQUES DE JOC
+// -------------------------------------------------------
+
+// COMBAT: s'activa quan el vaixell entra en una cel·la de Pirata (☠️)
+function combat() {
+    var forcaJugador  = Math.ceil((menjar + or) / 2);
+    var atacPirata    = Math.ceil(Math.random() * forcaJugador * 2);
+
+    if (atacPirata > forcaJugador) {
+        // Hem perdut el combat: perdem or
+        var orPerdut = Math.round(atacPirata / 2);
+        or = or - orPerdut;
+        experiencia = experiencia + 1;
+        missatgeJoc = "Lluita perduda! Perds " + orPerdut + " d'or.";
+    } else {
+        // Hem guanyat el combat: guanyem or
+        var orGuanyat = Math.round(atacPirata / 2);
+        or = or + orGuanyat;
+        experiencia = experiencia + 2;
+        missatgeJoc = "Victòria! Guanyes " + orGuanyat + " d'or.";
+    }
+}
+
+// COMERÇ: s'activa quan el vaixell entra en una cel·la d'Illa (🏝️)
+function comerc() {
+    var menjarDeLaIlla = experiencia + or;
+    var cost = Math.ceil(Math.random() * menjarDeLaIlla);
+
+    if (or > cost) {
+        // Tenim prou or per comerciar: bescanviem or per menjar
+        menjar = menjar + menjarDeLaIlla;
+        or = or - cost;
+        experiencia = experiencia + 2;
+        missatgeJoc = "Comerç: +" + menjarDeLaIlla + " menjar.";
+    } else {
+        // Sense prou or: no comerciem
+        experiencia = experiencia + 1;
+        missatgeJoc = "No tens prou or per comerciar.";
+    }
+}
+
+// -------------------------------------------------------
+// ACTUALITZAR EL HUD (barres i textos d'estadístiques)
+// -------------------------------------------------------
+
+function actualitzarHUD() {
+    // Calculem el percentatge de les barres (entre 0% i 100%)
+    var percentatgeMenjar = (menjar / MAX_MENJAR) * 100;
+    var percentatgeOr     = (or / Math.max(MAX_OR, or)) * 100;
+
+    // Limitem els valors entre 0 i 100
+    if (percentatgeMenjar < 0) { percentatgeMenjar = 0; }
+    if (percentatgeMenjar > 100) { percentatgeMenjar = 100; }
+    if (percentatgeOr < 0) { percentatgeOr = 0; }
+    if (percentatgeOr > 100) { percentatgeOr = 100; }
+
+    // Actualitzem l'amplada de les barres i els valors numèrics
+    document.getElementById("barra-menjar").style.width = percentatgeMenjar + "%";
+    document.getElementById("barra-or").style.width     = percentatgeOr + "%";
+    document.getElementById("valor-menjar").textContent = menjar;
+    document.getElementById("valor-or").textContent     = or;
+    document.getElementById("hud-xp").textContent       = "⭐ XP: " + experiencia;
+    document.getElementById("hud-nivell").textContent   = "Nivell " + nivell;
+    document.getElementById("hud-missatge").textContent = missatgeJoc;
+}
+
+// -------------------------------------------------------
+// SISTEMA DE PARTÍCULES (efecte visual al guanyar/perdre)
+// -------------------------------------------------------
+
+// Llança partícules de color cap amunt des de la part inferior del canvas
+function iniciarParticules(color) {
+    var canvas = document.getElementById("canvasParticules");
+    canvas.style.display = "block";
+    var ctx = canvas.getContext("2d");
+    var particules = [];
+
+    // Creem 70 partícules amb propietats aleatòries
+    for (var i = 0; i < 70; i++) {
+        var novaParticula = {
+            x:     Math.random() * 512,         // Posició X aleatòria
+            y:     512 + Math.random() * 80,    // Comencen a sota del canvas
+            vx:    (Math.random() - 0.5) * 3,   // Velocitat horitzontal (esquerra o dreta)
+            vy:    -(Math.random() * 5 + 2),    // Velocitat vertical cap amunt (negativa)
+            mida:  Math.random() * 7 + 3,        // Mida entre 3 i 10 px
+            alpha: 1                             // Opacitat inicial: 100%
+        };
+        particules.push(novaParticula);
+    }
+
+    // Funció d'animació que s'executa cada frame
+    function animar() {
+        ctx.clearRect(0, 0, 512, 512);  // Netejem el canvas
+        var hiHaVives = false;
+
+        for (var j = 0; j < particules.length; j++) {
+            var p = particules[j];
+
+            // Movem la partícula
+            p.x = p.x + p.vx;
+            p.y = p.y + p.vy;
+
+            // Reduïm l'opacitat gradualment
+            p.alpha = p.alpha - 0.012;
+
+            if (p.alpha > 0) {
+                hiHaVives = true;  // Encara hi ha partícules visibles
             }
 
-            // Ejecutar la acción según el tipo de terreno donde está ahora el barco
-            switch(map[shipRow][shipColumn]) {
-                case WATER:  gameMessage="Navegant per l'oceà..."; break;  // Sin efecto especial
-                case PIRATE: fight(); break;                                // Combate con el pirata
-                case ISLAND: trade(); break;                                // Comerciar en la isla
-                case HOME:   endGame(); return;                             // ¡Victoria! Llegó al castillo
-            }
-
-            checkLevel2();               // ¿Se desbloquea el nivel 2?
-            moveMonster();               // Mover el monstruo 1
-            if (monster2Active) moveMonster2();  // Mover el monstruo 2 (si existe)
-
-            // COMPROBACIÓN 2: ¿Un monstruo se movió encima del barco? → Derrota
-            if ((monsterRow===shipRow && monsterColumn===shipColumn) ||
-                (monster2Active && monster2Row===shipRow && monster2Column===shipColumn)) {
-                gameMessage="El monstre t'ha devorat!"; endGame(); return;
-            }
-
-            // COMPROBACIÓN 3: ¿Se quedó sin comida o sin oro? → Derrota
-            if (food<=0 || gold<=0) {
-                gameMessage="T'has quedat sense recursos..."; endGame(); return;
-            }
-
-            render();      // Redibujar el tablero con las nuevas posiciones
-            updateHUD();   // Actualizar las barras y estadísticas
+            // Dibuixem la partícula com un cercle
+            if (p.alpha < 0) { p.alpha = 0; }
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.mida, 0, Math.PI * 2);
+            ctx.fill();
         }
-    }
 
-    // -------------------------------------------------------
-    // SISTEMA DE NIVEL 2
-    // -------------------------------------------------------
-    function checkLevel2() {
-        if (!monster2Active && experience>=5) {
-            monster2Active=true; level=2;
-            spawnMonster2();
-            gameMessage="⚠️ Nivell 2! Un 2n rèmol ha aparegut!";
-        }
-    }
-
-    /**
-     * spawnMonster2()
-     * Coloca al segundo monstruo en una celda aleatoria que cumpla:
-     */
-    function spawnMonster2() {
-        var tries=0;
-        do {
-            monster2Row    = Math.floor(Math.random()*ROWS);
-            monster2Column = Math.floor(Math.random()*COLUMNS);
-            tries++;
-        } while(tries<100 && (
-            map[monster2Row][monster2Column]!==WATER ||            // Debe ser agua
-            gameObjects[monster2Row][monster2Column]!==0 ||       // Debe estar vacío
-            (Math.abs(monster2Row-shipRow)+Math.abs(monster2Column-shipColumn))<3  // Distancia mínima
-        ));
-        gameObjects[monster2Row][monster2Column]=MONSTER2;  // Colocar el segundo monstruo
-    }
-    // MOVIMIENTO DE MONSTRUOS (se mueven al azar por el agua)
-    //moveMonster()
-    
-    function moveMonster() {
-        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];  // Las 4 direcciones posibles (arriba, abajo, izq, der)
-        for(var i=0;i<dirs.length;i++){
-            var nr=monsterRow+dirs[i][0], nc=monsterColumn+dirs[i][1];
-            // Añadir la dirección solo si está dentro del tablero y es agua
-            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER) valid.push(dirs[i]);
-        }
-        if(valid.length>0){
-            var m=valid[Math.floor(Math.random()*valid.length)];  // Elegir dirección aleatoria
-            gameObjects[monsterRow][monsterColumn]=0;              // Limpiar posición anterior
-            monsterRow+=m[0]; monsterColumn+=m[1];                // Actualizar posición
-            gameObjects[monsterRow][monsterColumn]=MONSTER;        // Marcar nueva posición
-        }
-    }
-
-    function moveMonster2() {
-        var dirs=[[-1,0],[1,0],[0,-1],[0,1]], valid=[];
-        for(var i=0;i<dirs.length;i++){
-            var nr=monster2Row+dirs[i][0], nc=monster2Column+dirs[i][1];
-            // Válido solo si: dentro del tablero + agua + no ocupado por monstruo 1
-            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLUMNS&&map[nr][nc]===WATER&&gameObjects[nr][nc]!==MONSTER) valid.push(dirs[i]);
-        }
-        if(valid.length>0){
-            var m=valid[Math.floor(Math.random()*valid.length)];
-            gameObjects[monster2Row][monster2Column]=0;
-            monster2Row+=m[0]; monster2Column+=m[1];
-            gameObjects[monster2Row][monster2Column]=MONSTER2;
-        }
-    }
-
-    // -------------------------------------------------------
-    // MECÁNICAS DE JUEGO
-    // -------------------------------------------------------
-    function fight() {
-        var s=Math.ceil((food+gold)/2), p=Math.ceil(Math.random()*s*2);
-        if(p>s){ var lost=Math.round(p/2); gold-=lost; experience++;  gameMessage="Lluita perduda! Perds "+lost+" d'or."; }
-        else   { var won=Math.round(p/2);  gold+=won;  experience+=2; gameMessage="Victòria! Guanyes "+won+" d'or."; }
-    }
-
-    /**
-     * trade()
-     * Se activa cuando el barco entra en una celda de Isla (🏝️).
-     * Cálculo del comercio:
-     */
-    function trade() {
-        var islandFood=experience+gold, cost=Math.ceil(Math.random()*islandFood);
-        if(gold>cost){ food+=islandFood; gold-=cost; experience+=2; gameMessage="Comerç: +"+islandFood+" menjar."; }
-        else { experience++; gameMessage="No tens prou or per comerciar."; }
-    }
-
-    // -------------------------------------------------------
-    // ACTUALIZAR EL HUD (Panel de estadísticas)
-    // -------------------------------------------------------
-    function updateHUD() {
-        // Calcular porcentaje de llenado de las barras (entre 0% y 100%)
-        var fp=Math.max(0,Math.min(100,(food/FOOD_MAX)*100));
-        var gp=Math.max(0,Math.min(100,(gold/Math.max(GOLD_MAX,gold))*100));
-
-        document.getElementById("bar-food").style.width=fp+"%";
-        document.getElementById("bar-gold").style.width=gp+"%";
-        document.getElementById("val-food").textContent=food;
-        document.getElementById("val-gold").textContent=gold;
-        document.getElementById("hud-xp").textContent="⭐ XP: "+experience;
-        document.getElementById("hud-level").textContent="Nivell "+level;
-        document.getElementById("hud-msg").textContent=gameMessage;
-    }
-
-    // -------------------------------------------------------
-    // SISTEMA DE PARTÍCULAS (Efecto visual al ganar/perder)
-    // -------------------------------------------------------
-    function startParticles(color) {
-        var canvas=document.getElementById("particleCanvas");
-        canvas.style.display="block";
-        var ctx=canvas.getContext("2d");
-        var particles=[];
-
-        // Crear 70 partículas con propiedades aleatorias
-        for(var i=0;i<70;i++) particles.push({
-            x:Math.random()*512,           // Posición X aleatoria
-            y:512+Math.random()*80,        // Empiezan debajo del canvas
-            vx:(Math.random()-0.5)*3,      // Velocidad horizontal aleatoria (izq o der)
-            vy:-(Math.random()*5+2),       // Velocidad vertical hacia arriba (negativa = subir)
-            size:Math.random()*7+3,        // Tamaño entre 3 y 10 px
-            alpha:1                        // Opacidad inicial al 100%
-        });
-
-        function animate(){
-            ctx.clearRect(0,0,512,512);    // Limpiar el canvas en cada frame
-            var alive=false;               // ¿Queda alguna partícula visible?
-            for(var i=0;i<particles.length;i++){
-                var p=particles[i];
-                p.x+=p.vx;                 // Mover horizontalmente
-                p.y+=p.vy;                 // Mover verticalmente (hacia arriba)
-                p.alpha-=0.012;            // Reducir opacidad gradualmente
-                if(p.alpha>0) alive=true;  // Si aún visible, el sistema sigue activo
-                ctx.globalAlpha=Math.max(0,p.alpha);
-                ctx.fillStyle=color;
-                ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-            }
-            // Continuar animación o limpiar canvas si todas las partículas han muerto
-            if(alive) requestAnimationFrame(animate);
-            else { ctx.clearRect(0,0,512,512); canvas.style.display="none"; }
-        }
-        animate();
-    }
-
-    // -------------------------------------------------------
-    // FIN DE PARTIDA
-    // -------------------------------------------------------
-
-    /**
-     * endGame()
-     * Gestiona el final de la partida (victoria o derrota).
-     */
-    function endGame() {
-        gameRunning=false;
-        window.removeEventListener("keydown", keydownHandler, false);  // Desactivar controles
-
-        var score=food+gold+experience;                                 // Puntuación = todos los recursos acumulados
-        var isWin=(map[shipRow][shipColumn]===HOME);                    // ¿El barco está en el castillo?
-        var endScreen=document.querySelector("#endScreen");
-        var endStatus=document.querySelector("#endStatus");
-
-        if(isWin){
-            // --- VICTORIA ---
-            endStatus.innerHTML="🎉 VICTÒRIA!";
-            endStatus.style.color="#00ff88";
-            endScreen.style.background="rgba(0,50,0,0.95)";
-            startParticles("#00ff88");                                  // Partículas verdes
-            var name=prompt("¡NOU RÈCORD POSSIBLE! Com et diuen, pirata?")||"Capità Anònim";  // Pedir nombre
-            var recs=saveRecord(name,score);                            // Guardar en localStorage
-            document.querySelector("#highScoreDisplay").innerHTML="🏆 "+recs[0].score+" pts — "+recs[0].name;
+        // Si encara hi ha partícules visibles, continuem l'animació
+        if (hiHaVives) {
+            requestAnimationFrame(animar);
         } else {
-            // --- DERROTA ---
-            endStatus.innerHTML="💀 GAME OVER";
-            endStatus.style.color="#ff4444";
-            endScreen.style.background="rgba(50,0,0,0.95)";
-            startParticles("#ff4444");                                  // Partículas rojas
-            var recs=getRecords();
-            document.querySelector("#highScoreDisplay").innerHTML=
-                recs.length>0?"Rècord: "+recs[0].score+" pts ("+recs[0].name+")":"Cap rècord encara.";
+            // Totes han desaparegut: netejem i amaguen el canvas
+            ctx.clearRect(0, 0, 512, 512);
+            canvas.style.display = "none";
         }
-
-        // Mostrar puntuación y mensaje del último evento
-        document.querySelector("#finalScore").innerHTML=
-            "Puntuació final: <b>"+score+"</b><br><small style='color:#aaa;'>"+gameMessage+"</small>";
-        endScreen.style.display="flex";
     }
 
-    // RENDERIZADO DEL TABLERO
-    function render() {
-        // Eliminar todas las celdas del render anterior
-        var children=stage.querySelectorAll(".cell");
-        for(var i=0;i<children.length;i++) stage.removeChild(children[i]);
+    animar();
+}
 
-        // Crear una celda por cada posición del tablero 10x10
-        for(var row=0;row<ROWS;row++) {
-            for(var col=0;col<COLUMNS;col++) {
-                var cell=document.createElement("div");
-                cell.setAttribute("class","cell");
+// -------------------------------------------------------
+// FINAL DE PARTIDA
+// -------------------------------------------------------
 
-                // Posicionar la celda con píxeles exactos
-                cell.style.top  = row*SIZE+"px";
-                cell.style.left = col*SIZE+"px";
+function acabarJoc() {
+    // Aturem el joc i desactivem les tecles
+    jocEnMarxa = false;
+    window.removeEventListener("keydown", gestionarTecla, false);
 
-                // --- COLOR DE FONDO según el tipo de terreno ---
-                var t=map[row][col];
-                if      (t===WATER)  cell.style.background=(row+col)%2===0 ? BG_WATER_A : BG_WATER_B;  // Efecto tablero de ajedrez en el agua
-                else if (t===ISLAND) cell.style.background=BG_ISLAND;
-                else if (t===PIRATE) cell.style.background=BG_PIRATE;
-                else if (t===HOME)   cell.style.background=BG_HOME;
+    // Calculem la puntuació final
+    var puntuacio = menjar + or + experiencia;
 
-                // --- EMOJI según el objeto en esta celda ---
-                var obj=gameObjects[row][col];
-                if      (obj===SHIP)     { cell.textContent=EMOJI[SHIP];     cell.style.filter="drop-shadow(0 0 8px #ffe060)"; }  // Barco con halo dorado
-                else if (obj===MONSTER)  { cell.textContent=EMOJI[MONSTER];  cell.style.filter="drop-shadow(0 0 6px #ff2040)"; }  // Monstruo 1 con halo rojo
-                else if (obj===MONSTER2) { cell.textContent=EMOJI[MONSTER2]; cell.style.filter="drop-shadow(0 0 6px #cc00ff)"; }  // Monstruo 2 con halo morado
-                else                    { cell.textContent=EMOJI[t]||""; }  // Terreno estático (emoji del mapa)
+    // Comprovem si hem guanyat (el vaixell és al castell)
+    var hemGuanyat = (mapa[filVaixell][colVaixell] === CASTELL);
 
-                stage.appendChild(cell);
+    var pantallaFinal = document.getElementById("pantallaFinal");
+    var estatFinal    = document.getElementById("estatFinal");
+
+    if (hemGuanyat) {
+        // --- VICTÒRIA ---
+        estatFinal.innerHTML = "🎉 VICTÒRIA!";
+        estatFinal.style.color = "#00ff88";
+        pantallaFinal.style.background = "rgba(0,50,0,0.95)";
+        iniciarParticules("#00ff88");  // Partícules verdes
+
+        // Demanem el nom del jugador i guardem el rècord
+        var nom = prompt("¡NOU RÈCORD POSSIBLE! Com et diuen, pirata?");
+        if (nom === null || nom === "") {
+            nom = "Capità Anònim";
+        }
+
+        var records = guardarRecord(nom, puntuacio);
+        document.getElementById("mostrarRecord").innerHTML =
+            "🏆 " + records[0].puntuacio + " pts — " + records[0].nom;
+
+    } else {
+        // --- DERROTA ---
+        estatFinal.innerHTML = "💀 GAME OVER";
+        estatFinal.style.color = "#ff4444";
+        pantallaFinal.style.background = "rgba(50,0,0,0.95)";
+        iniciarParticules("#ff4444");  // Partícules vermelles
+
+        var records = obtenirRecords();
+        if (records.length > 0) {
+            document.getElementById("mostrarRecord").innerHTML =
+                "Rècord: " + records[0].puntuacio + " pts (" + records[0].nom + ")";
+        } else {
+            document.getElementById("mostrarRecord").innerHTML = "Cap rècord encara.";
+        }
+    }
+
+    // Mostrem la puntuació i l'últim missatge
+    document.getElementById("puntuacioFinal").innerHTML =
+        "Puntuació final: <b>" + puntuacio + "</b><br>" +
+        "<small style='color:#aaa;'>" + missatgeJoc + "</small>";
+
+    pantallaFinal.style.display = "flex";
+}
+
+// -------------------------------------------------------
+// DIBUIXAR EL TAULER
+// Esborrem totes les cel·les i les tornem a crear des de zero
+// -------------------------------------------------------
+
+function dibuixarTauler() {
+    // Esborrem totes les cel·les del render anterior
+    var cellesAntigues = tauler.querySelectorAll(".cella");
+    for (var i = 0; i < cellesAntigues.length; i++) {
+        tauler.removeChild(cellesAntigues[i]);
+    }
+
+    // Creem una cel·la per a cada posició del tauler 10x10
+    for (var fila = 0; fila < FILES; fila++) {
+        for (var col = 0; col < COLUMNES; col++) {
+
+            var cella = document.createElement("div");
+            cella.setAttribute("class", "cella");
+
+            // Posicionem la cel·la amb píxels exactes
+            cella.style.top  = (fila * MIDA_CEL) + "px";
+            cella.style.left = (col  * MIDA_CEL) + "px";
+
+            // COLOR DE FONS segons el tipus de terreny
+            var tipusTerreny = mapa[fila][col];
+
+            if (tipusTerreny === AIGUA) {
+                // Efecte escaquer: files/columnes parells vs imparells
+                if ((fila + col) % 2 === 0) {
+                    cella.style.background = COLOR_AIGUA_A;
+                } else {
+                    cella.style.background = COLOR_AIGUA_B;
+                }
             }
+
+            if (tipusTerreny === ILLA) {
+                cella.style.background = COLOR_ILLA;
+            }
+
+            if (tipusTerreny === PIRATA) {
+                cella.style.background = COLOR_PIRATA;
+            }
+
+            if (tipusTerreny === CASTELL) {
+                cella.style.background = COLOR_CASTELL;
+            }
+
+            // EMOJI segons l'objecte que hi ha a la cel·la
+            var objecte = objectesMapa[fila][col];
+
+            if (objecte === VAIXELL) {
+                cella.textContent = EMOJIS[VAIXELL];
+                cella.style.filter = "drop-shadow(0 0 8px #ffe060)";  // Halo daurat
+            } else if (objecte === MONSTRE) {
+                cella.textContent = EMOJIS[MONSTRE];
+                cella.style.filter = "drop-shadow(0 0 6px #ff2040)";  // Halo vermell
+            } else if (objecte === MONSTRE2) {
+                cella.textContent = EMOJIS[MONSTRE2];
+                cella.style.filter = "drop-shadow(0 0 6px #cc00ff)";  // Halo porpra
+            } else {
+                // Si no hi ha objecte, mostrem l'emoji del terreny
+                cella.textContent = EMOJIS[tipusTerreny] || "";
+            }
+
+            tauler.appendChild(cella);
         }
     }
+}
 
-    // AUTO-EJECUCIÓN AL CARGAR LA PÁGINA
-    // Muestra el récord actual en la pantalla de inicio (si existe)
-    (function(){
-        var recs=getRecords();
-        if(recs.length>0)
-            document.getElementById("startRecord").innerHTML=
-                "🏆 Rècord: <b>"+recs[0].score+"</b> pts ("+recs[0].name+")";
-    })();
+// -------------------------------------------------------
+// EXECUCIÓ INICIAL: Mostrar el rècord a la pantalla d'inici
+// S'executa automàticament quan la pàgina es carrega
+// -------------------------------------------------------
+
+var recordsInicials = obtenirRecords();
+if (recordsInicials.length > 0) {
+    document.getElementById("recordInicial").innerHTML =
+        "🏆 Rècord: <b>" + recordsInicials[0].puntuacio + "</b> pts (" + recordsInicials[0].nom + ")";
+}
+
 </script>
 </body>
 </html>
